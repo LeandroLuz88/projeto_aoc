@@ -1,0 +1,28 @@
+.data
+# Dimensoes: 8 x 8
+SpriteWidth: .word 8
+SpriteHeight: .word 8
+Sprite:
+    .byte 0, 0, 9, 9, 9, 9, 0, 0
+    .byte 0, 9, 9, 9, 9, 9, 9, 0
+    .byte 0, 0, 5, 5, 5, 5, 0, 0
+    .byte 0, 0, 0, 5, 5, 0, 0, 0
+    .byte 0, 0, 8, 8, 8, 8, 0, 0
+    .byte 0, 0, 8, 8, 8, 8, 0, 0
+    .byte 0, 0, 2, 2, 2, 2, 0, 0
+    .byte 0, 0, 2, 0, 0, 2, 0, 0
+
+.align 2
+Cores:
+    .word 0x000000
+    .word 0x8FF43B
+    .word 0x000000
+    .word 0x3A9206
+    .word 0x295C0B
+    .word 0xFFA96F
+    .word 0xDD8B53
+    .word 0x032090
+    .word 0xD02F17
+    .word 0x2B1709
+
+.text
