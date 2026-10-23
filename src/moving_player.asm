@@ -385,6 +385,19 @@ StartMove:
 	j InputDone
 
 
+# Aproxima um valor do destino em 1 unidade
+#	a0: Valor atual
+#	a1: Destino
+#	v0: Novo valor (atual + 1, atual - 1 ou o próprio atual)
+StepToward:
+	slt $t0, $a0, $a1	# 1 se atual < destino
+	slt $t1, $a1, $a0	# 1 se destino < atual
+	add $v0, $a0, $t0
+	sub $v0, $v0, $t1
+	
+	jr $ra
+
+
 # Atualiza o estado do jogador a cada frame
 UpdatePlayer:
 	addi $sp, $sp, -4
@@ -401,20 +414,41 @@ UpdatePlayer:
 	lw $a1, 0($t2)
 	jal EraseSprite
 	
-	# movimento eh instantaneo, vai direto para o destino
-	la $t0, TargetUnitX
-	lw $t1, 0($t0)
+	# Avanca 1 unidade em direcao ao destino (eixo X)
 	la $t0, PlayerX
-	sw $t1, 0($t0)
+	lw $a0, 0($t0)
+	la $t0, TargetUnitX
+	lw $a1, 0($t0)
+	jal StepToward
+	la $t0, PlayerX
+	sw $v0, 0($t0)
 	
-	la $t0, TargetUnitY
-	lw $t1, 0($t0)
+	# Idem no eixo Y
 	la $t0, PlayerY
-	sw $t1, 0($t0)
+	lw $a0, 0($t0)
+	la $t0, TargetUnitY
+	lw $a1, 0($t0)
+	jal StepToward
+	la $t0, PlayerY
+	sw $v0, 0($t0)
+	
+	# Se ainda não chegou ao destino, continua em movimento
+	la $t0, PlayerX
+	lw $t1, 0($t0)
+	la $t0, TargetUnitX
+	lw $t2, 0($t0)
+	bne $t1, $t2, UpdateDone
+	
+	la $t0, PlayerY
+	lw $t1, 0($t0)
+	la $t0, TargetUnitY
+	lw $t2, 0($t0)
+	bne $t1, $t2, UpdateDone
 	
 	# Chegou ao destino
 	la $t0, Moving
 	sw $zero, 0($t0)
+
 	
 	UpdateDone:
 	lw $ra, 0($sp)
