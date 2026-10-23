@@ -5,9 +5,9 @@
 
 .data
 
-# Posição inicial do jogador em tile
-PlayerX: .word 7
-PlayerY: .word 7
+# Posição inicial do jogador em unidades do bitmap
+PlayerX: .word 56
+PlayerY: .word 56
 
 Player:
     .byte 0, 0, 9, 9, 9, 9, 0, 0
@@ -165,6 +165,7 @@ DrawSprite:
 	EndDrawSpriteLoop1:
 	
 	jr $ra
+	
 # Função que retorna o endereço na memória do Tile
 # 	a0: Posição x do tile
 #	a1: Posição y do tile
@@ -179,6 +180,23 @@ GetTileAdress:
 	
 	jr $ra
 	
+
+# Função que retorna o endereço na memória de uma posição em unidades
+# 	a0: Posição x em unidades
+#	a1: Posição y em unidades
+#	v0: Endereço da unidade
+GetUnitAdress:
+	sll $a0, $a0, 2		# x * 4 bytes = 2^2
+	sll $a1, $a1, 9		# y * 128 * 4 = y * 2^9
+	
+	li $v0, 0x10040000
+	add $v0, $v0, $a0
+	add $v0, $v0, $a1
+	
+	jr $ra
+
+
+
 InitGame:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
@@ -237,7 +255,7 @@ MoveUp:
 	la $t2, PlayerX
 	lw $a0, 0($t2)
 	move $a1, $t1
-	jal GetTileAdress
+	jal GetUnitAdress
 	
 	la $a0, Grass
 	move $a1, $v0
@@ -249,7 +267,7 @@ MoveUp:
 	lw $t0, 4($sp)
 	addi $sp, $sp, 8
 	
-	addi $t1, $t1, -1	# Altera a posição do jogador
+	addi $t1, $t1, -8	# Altera a posição do jogador
 	
 	sw $t1, 0($t0)
 	j InputDone
@@ -267,7 +285,7 @@ MoveLeft:
 	move $a0, $t1
 	la $t2, PlayerY
 	lw $a1, 0($t2)
-	jal GetTileAdress
+	jal GetUnitAdress
 	
 	la, $a0, Grass
 	move $a1, $v0
@@ -279,7 +297,7 @@ MoveLeft:
 	lw $t0, 4($sp)
 	addi $sp, $sp, 8
 	
-	addi $t1, $t1, -1	# Altera a posição do jogador
+	addi $t1, $t1, -8	# Altera a posição do jogador
 	
 	sw $t1, 0($t0)
 	j InputDone
@@ -288,7 +306,7 @@ MoveDown:
 	lw $t1, 0($t0)
 	
 	# Se for sair do mapa
-	li $t2, 15
+	li $t2, 120
 	slt $t2, $t1, $t2
 	beq $t2, $zero, InputDone
 	
@@ -299,7 +317,7 @@ MoveDown:
 	la $t2, PlayerX
 	lw $a0, 0($t2)
 	move $a1, $t1
-	jal GetTileAdress
+	jal GetUnitAdress
 	
 	la, $a0, Grass
 	move $a1, $v0
@@ -311,7 +329,7 @@ MoveDown:
 	lw $t0, 4($sp)
 	addi $sp, $sp, 8
 	
-	addi $t1, $t1, 1	# Altera a posição do jogador
+	addi $t1, $t1, 8	# Altera a posição do jogador
 	
 	sw $t1, 0($t0)
 	j InputDone
@@ -320,7 +338,7 @@ MoveRight:
 	lw $t1, 0($t0)
 	
 	# Se for sair do mapa
-	li $t2, 15
+	li $t2, 120
 	slt $t2, $t1, $t2
 	beq $t2, $zero, InputDone
 	
@@ -331,7 +349,7 @@ MoveRight:
 	move $a0, $t1
 	la $t2, PlayerY
 	lw $a1, 0($t2)
-	jal GetTileAdress
+	jal GetUnitAdress
 	
 	la $a0, Grass
 	move $a1, $v0
@@ -343,12 +361,12 @@ MoveRight:
 	lw $t0, 4($sp)
 	addi $sp, $sp, 8
 	
-	addi $t1, $t1, 1	# Altera a posição do jogador
+	addi $t1, $t1, 8	# Altera a posição do jogador
 	
 	sw $t1, 0($t0)
 	j InputDone
 
-	j InputDone
+
 Render:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
@@ -357,7 +375,7 @@ Render:
 	la $t1, PlayerY
 	lw $a0, 0($t0)
 	lw $a1, 0($t1)
-	jal GetTileAdress
+	jal GetUnitAdress
 	
 	la $a0, Player
 	move $a1, $v0
