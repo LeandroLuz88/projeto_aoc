@@ -9,6 +9,14 @@
 PlayerX: .word 56
 PlayerY: .word 56
 
+# Destino do movimento do jogador (se estah parado, eh a posicao do jogador)
+TargetUnitX: .word 56
+TargetUnitY: .word 56
+
+# Indica de ha movimento ou nao, 0 == parado, 1 == movimentando
+Moving: .word 0
+
+
 Player:
     .byte 0, 0, 9, 9, 9, 9, 0, 0
     .byte 0, 9, 9, 9, 9, 9, 9, 0
@@ -50,6 +58,7 @@ main:
 	GameLoop:
 	
 		jal ReadInput
+		jal UpdatePlayer
 		jal Render
 		
 		li $v0, 32
@@ -165,7 +174,8 @@ DrawSprite:
 	EndDrawSpriteLoop1:
 	
 	jr $ra
-	
+
+
 # Função que retorna o endereço na memória do Tile
 # 	a0: Posição x do tile
 #	a1: Posição y do tile
@@ -211,6 +221,11 @@ InitGame:
 ReadInput:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
+
+	# Se o jogador ja esta se movendo, ignora o teclado
+	la $t0, Moving
+	lw $t1, 0($t0)
+	bne $t1, $zero, InputDone
 	
 	li $t0, 0xffff0000	# Endereço de registro de controle
 	lw $t1, 0($t0)
@@ -248,29 +263,11 @@ MoveUp:
 	# Se for sair do mapa
 	blez $t1, InputDone
 	
-	addi $sp, $sp, -8
-	sw $t1, 0($sp)
-	sw $t0, 4($sp)
+	addi $t1, $t1, -8	# destino: 1 tile acima
 	
-	la $t2, PlayerX
-	lw $a0, 0($t2)
-	move $a1, $t1
-	jal GetUnitAdress
-	
-	la $a0, Grass
-	move $a1, $v0
-	li $a2, 8
-	li $a3, 8
-	jal DrawSprite
-		
-	lw $t1, 0($sp)
-	lw $t0, 4($sp)
-	addi $sp, $sp, 8
-	
-	addi $t1, $t1, -8	# Altera a posição do jogador
-	
+	la $t0, TargetUnitY
 	sw $t1, 0($t0)
-	j InputDone
+	j StartMove
 MoveLeft:
 	la $t0, PlayerX
 	lw $t1, 0($t0)
@@ -278,29 +275,11 @@ MoveLeft:
 	# Se for sair do mapa
 	blez $t1, InputDone
 	
-	addi $sp, $sp, -8
-	sw $t1, 0($sp)
-	sw $t0, 4($sp)
+	addi $t1, $t1, -8	# destino: 1 tile a esquerda
 	
-	move $a0, $t1
-	la $t2, PlayerY
-	lw $a1, 0($t2)
-	jal GetUnitAdress
-	
-	la, $a0, Grass
-	move $a1, $v0
-	li $a2, 8
-	li $a3, 8
-	jal DrawSprite
-		
-	lw $t1, 0($sp)
-	lw $t0, 4($sp)
-	addi $sp, $sp, 8
-	
-	addi $t1, $t1, -8	# Altera a posição do jogador
-	
+	la $t0, TargetUnitX
 	sw $t1, 0($t0)
-	j InputDone
+	j StartMove
 MoveDown:
 	la $t0, PlayerY
 	lw $t1, 0($t0)
@@ -310,29 +289,11 @@ MoveDown:
 	slt $t2, $t1, $t2
 	beq $t2, $zero, InputDone
 	
-	addi $sp, $sp, -8
-	sw $t1, 0($sp)
-	sw $t0, 4($sp)
+	addi $t1, $t1, 8	# destino: 1 tile abaixo
 	
-	la $t2, PlayerX
-	lw $a0, 0($t2)
-	move $a1, $t1
-	jal GetUnitAdress
-	
-	la, $a0, Grass
-	move $a1, $v0
-	li $a2, 8
-	li $a3, 8
-	jal DrawSprite
-		
-	lw $t1, 0($sp)
-	lw $t0, 4($sp)
-	addi $sp, $sp, 8
-	
-	addi $t1, $t1, 8	# Altera a posição do jogador
-	
+	la $t0, TargetUnitY
 	sw $t1, 0($t0)
-	j InputDone
+	j StartMove
 MoveRight:
 	la $t0, PlayerX
 	lw $t1, 0($t0)
@@ -342,11 +303,31 @@ MoveRight:
 	slt $t2, $t1, $t2
 	beq $t2, $zero, InputDone
 	
-	addi $sp, $sp, -8
-	sw $t1, 0($sp)
-	sw $t0, 4($sp)
+	addi $t1, $t1, 8	# destino: 1 tile a direita
 	
-	move $a0, $t1
+	la $t0, TargetUnitX
+	sw $t1, 0($t0)
+	j StartMove
+
+StartMove:
+	la $t0, Moving
+	li $t1, 1
+	sw $t1, 0($t0)
+	j InputDone
+
+
+# Atualiza o estado do jogador a cada frame
+UpdatePlayer:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	la $t0, Moving
+	lw $t1, 0($t0)
+	beq $t1, $zero, UpdateDone	# Parado: nada a fazer
+	
+	# apaga o jogador da posição atual (repinta a grama)
+	la $t2, PlayerX
+	lw $a0, 0($t2)
 	la $t2, PlayerY
 	lw $a1, 0($t2)
 	jal GetUnitAdress
@@ -356,15 +337,27 @@ MoveRight:
 	li $a2, 8
 	li $a3, 8
 	jal DrawSprite
-		
-	lw $t1, 0($sp)
-	lw $t0, 4($sp)
-	addi $sp, $sp, 8
 	
-	addi $t1, $t1, 8	# Altera a posição do jogador
-	
+	# movimento eh instantaneo, vai direto para o destino
+	la $t0, TargetUnitX
+	lw $t1, 0($t0)
+	la $t0, PlayerX
 	sw $t1, 0($t0)
-	j InputDone
+	
+	la $t0, TargetUnitY
+	lw $t1, 0($t0)
+	la $t0, PlayerY
+	sw $t1, 0($t0)
+	
+	# Chegou ao destino
+	la $t0, Moving
+	sw $zero, 0($t0)
+	
+	UpdateDone:
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
 
 
 Render:
