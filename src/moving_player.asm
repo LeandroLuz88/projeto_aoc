@@ -1,11 +1,11 @@
-# Configutaçõe do bitmap:
+# Configuracoes do bitmap:
 # 	- Unit W/H: 16
 # 	- Display W/H: 256
 # 128x128 unidades no display
 
 .data
 
-# Posição inicial do jogador em unidades do bitmap
+# Posicao inicial do jogador em unidades do bitmap
 PlayerX: .word 56
 PlayerY: .word 56
 
@@ -68,7 +68,7 @@ main:
 	
 	j Exit
 
-# Simplesmente preenche tood o fundo com o sprite 'Grass'
+# Simplesmente preenche todo o fundo com o sprite 'Grass'
 DrawBackground:
 	li $t0, 0		# índice i
 	li $t1, 0		# indice j
@@ -122,28 +122,30 @@ DrawBackground:
 	DBGLoop1Exit:
 	
 	jr $ra
+
+
 # Desenha um sprite
 ########################
 # Argumentos:
-#	a0: Endereço da matriz de sprite
-#	a1: Posição no bitmap
+#	a0: Endereco da matriz de sprite
+#	a1: Posicao no bitmap
 #	a2: Altura do sprite
 #	a3: Largura do sprite
 ########################
-# Informações:
-#	- A altura e a largura são em número de unidades.
-# 	- O valor 32 da operação "li $t4, 32" foi escolhido porque o bitmap foi
+# Informacoes:
+#	- A altura e a largura sao em numero de unidades.
+# 	- O valor 32 da operacao "li $t4, 32" foi escolhido porque o bitmap foi
 #	  configurado para Display Width de 256 e Unit Width 8. Portando 256/8=32.
-#  	  Para cada configuração de bitmap, altere esse valor
+#  	- Para cada configuração de bitmap, altere esse valor
 DrawSprite:
-	la $t0, Colors	# Endereço da lista de cores
-	li $t1, 0	# Índice i
-	li $t2, 0	# Índice j
+	la $t0, Colors	# Endereco da lista de cores
+	li $t1, 0	# Indice i
+	li $t2, 0	# Indice j
 	
 	li $t4, 128	# 512/4 = 128
 	sub $t4, $t4, $a3
 	sll $t4, $t4, 2
-	# $t4 é o número de bytes a serem pulados para ir da posição do último ponto de uma linha do sprite no bitmap para o 1° da próxima
+	# $t4 é o numero de bytes a serem pulados para ir da posicao do ultimo ponto de uma linha do sprite no bitmap para o 1o da proxima
 	
 	DrawSpriteLoop1:
 		beq $t1, $a2, EndDrawSpriteLoop1
@@ -155,19 +157,19 @@ DrawSprite:
 			
 			# Pintura do ponto
 			sll $t3, $t3, 2		# Multiplica por 2^2=4
-			add $t3, $t3, $t0	# Calcula o endereço da cor
+			add $t3, $t3, $t0	# Calcula o endereco da cor
 			lw $t3, 0($t3)		# Carrega o valor da cor
 			sw $t3, 0($a1)		# Pinta o ponto
 			
 			JumpDot:
-			addi $a0, $a0, 1	# Incrementa índice da matriz de sprite
-			addi $a1, $a1, 4	# Joga o ponto no bitmap para a posição ao seguinte somando 1*4=4
+			addi $a0, $a0, 1	# Incrementa indice da matriz de sprite
+			addi $a1, $a1, 4	# Joga o ponto no bitmap para a posicao ao seguinte somando 1*4=4
 			addi $t2, $t2, 1	# i++
 			
 		j DrawSpriteLoop2
 		EndDrawSpriteLoop2:
 		
-		add $a1, $a1, $t4 # Joga o ponto para a posição inicial da linha seguinte
+		add $a1, $a1, $t4 # Joga o ponto para a posicao inicial da linha seguinte
 		addi $t1, $t1, 1	# j++
 		move $t2, $0		# i = 0
 	j DrawSpriteLoop1
@@ -176,10 +178,10 @@ DrawSprite:
 	jr $ra
 
 
-# Função que retorna o endereço na memória do Tile
-# 	a0: Posição x do tile
-#	a1: Posição y do tile
-#	v0: Endereço do tile
+# Funcao que retorna o endereço na memoria do Tile
+# 	a0: Posicao x do tile
+#	a1: Posicao y do tile
+#	v0: Endereco do tile
 GetTileAdress:
 	sll $a0, $a0, 5		# x * 8 * 4 = 2^5
 	sll $a1, $a1, 12	# y * 128 * 8 * 4 = y * 2^12
@@ -191,10 +193,10 @@ GetTileAdress:
 	jr $ra
 	
 
-# Função que retorna o endereço na memória de uma posição em unidades
-# 	a0: Posição x em unidades
-#	a1: Posição y em unidades
-#	v0: Endereço da unidade
+# Funcao que retorna o endereco na memoria de uma posicao em unidades
+# 	a0: Posicao x em unidades
+#	a1: Posicao y em unidades
+#	v0: Endereco da unidade
 GetUnitAdress:
 	sll $a0, $a0, 2		# x * 4 bytes = 2^2
 	sll $a1, $a1, 9		# y * 128 * 4 = y * 2^9
@@ -205,6 +207,73 @@ GetUnitAdress:
 	
 	jr $ra
 
+
+# Desenha o fundo (grama) em um tile
+#	a0: Posicao x do tile
+#	a1: Posicao y do tile
+DrawTile:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal GetTileAdress
+	
+	la $a0, Grass
+	move $a1, $v0
+	li $a2, 8
+	li $a3, 8
+	jal DrawSprite
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
+
+
+# Repinta o fundo em todos os tiles que um sprite 8x8 cobre.
+# Alinhado a um tile, cobre 1 tile; entre dois tiles, cobre 2.
+#	a0: Posicao x do sprite em unidades
+#	a1: Posicao y do sprite em unidades
+EraseSprite:
+	addi $sp, $sp, -24
+	sw $ra, 0($sp)
+	sw $s0, 4($sp)
+	sw $s1, 8($sp)
+	sw $s2, 12($sp)
+	sw $s3, 16($sp)
+	sw $s4, 20($sp)
+	
+	srl $s4, $a0, 3		# s4 = primeiro tile x coberto (fica fixo)
+	addi $t0, $a0, 7	# ultimo ponto do sprite em x = x + 7
+	srl $s2, $t0, 3		# s2 = ultimo tile x coberto
+	
+	srl $s1, $a1, 3		# s1 = tile y atual (comeca no primeiro coberto)
+	addi $t0, $a1, 7	# ultimo ponto do sprite em y = y + 7
+	srl $s3, $t0, 3		# s3 = ultimo tile y coberto
+	
+	EraseLoopY:
+	bgt $s1, $s3, EraseEnd
+		move $s0, $s4		# s0 = tile x atual, volta ao inicio da linha
+		EraseLoopX:
+		bgt $s0, $s2, EraseLoopXEnd
+			move $a0, $s0
+			move $a1, $s1
+			jal DrawTile
+			addi $s0, $s0, 1
+		j EraseLoopX
+		EraseLoopXEnd:
+		addi $s1, $s1, 1
+	j EraseLoopY
+	EraseEnd:
+	
+	lw $ra, 0($sp)
+	lw $s0, 4($sp)
+	lw $s1, 8($sp)
+	lw $s2, 12($sp)
+	lw $s3, 16($sp)
+	lw $s4, 20($sp)
+	addi $sp, $sp, 24
+	
+	jr $ra
 
 
 InitGame:
@@ -227,7 +296,7 @@ ReadInput:
 	lw $t1, 0($t0)
 	bne $t1, $zero, InputDone
 	
-	li $t0, 0xffff0000	# Endereço de registro de controle
+	li $t0, 0xffff0000	# Endereco de registro de controle
 	lw $t1, 0($t0)
 	andi $t1, $t1, 1
 	beq $t1, $zero, InputDone
@@ -325,18 +394,12 @@ UpdatePlayer:
 	lw $t1, 0($t0)
 	beq $t1, $zero, UpdateDone	# Parado: nada a fazer
 	
-	# apaga o jogador da posição atual (repinta a grama)
+	# apaga o jogador da posicao atual (repinta a grama)
 	la $t2, PlayerX
 	lw $a0, 0($t2)
 	la $t2, PlayerY
 	lw $a1, 0($t2)
-	jal GetUnitAdress
-	
-	la $a0, Grass
-	move $a1, $v0
-	li $a2, 8
-	li $a3, 8
-	jal DrawSprite
+	jal EraseSprite
 	
 	# movimento eh instantaneo, vai direto para o destino
 	la $t0, TargetUnitX
