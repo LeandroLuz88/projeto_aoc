@@ -9,6 +9,10 @@
 PlayerX: .word 56
 PlayerY: .word 56
 
+# Onde o jogador esta desenhado na tela agora (comeca igual a PlayerX/Y)
+DrawnUnitX: .word 56
+DrawnUnitY: .word 56
+
 # Destino do movimento do jogador (se estah parado, eh a posicao do jogador)
 TargetUnitX: .word 56
 TargetUnitY: .word 56
@@ -70,7 +74,7 @@ main:
 
 # Simplesmente preenche todo o fundo com o sprite 'Grass'
 DrawBackground:
-	li $t0, 0		# índice i
+	li $t0, 0		# indice i
 	li $t1, 0		# indice j
 	li $t2, 16 		# 16x16
 	
@@ -208,62 +212,82 @@ GetUnitAdress:
 	jr $ra
 
 
-# Desenha o fundo (grama) em um tile
-#	a0: Posicao x do tile
-#	a1: Posicao y do tile
-DrawTile:
-	addi $sp, $sp, -4
-	sw $ra, 0($sp)
+# Retorna a cor do fundo em uma posição
+#	a0: Posição x em unidades
+#	a1: Posição y em unidades
+#	v0: Cor (0x00RRGGBB)
+BackgroundColor:
+	andi $t0, $a0, 7	# x mod 8
+	andi $t1, $a1, 7	# y mod 8
+	sll $t1, $t1, 3		# (y mod 8) * 8 = inicio da linha no sprite
+	add $t0, $t0, $t1	# indice do ponto no sprite
+	la $t1, Grass
+	add $t0, $t0, $t1
+	lbu $t0, 0($t0)		# indice da cor
 	
-	jal GetTileAdress
-	
-	la $a0, Grass
-	move $a1, $v0
-	li $a2, 8
-	li $a3, 8
-	jal DrawSprite
-	
-	lw $ra, 0($sp)
-	addi $sp, $sp, 4
+	sll $t0, $t0, 2		# indice * 4
+	la $t1, Colors
+	add $t0, $t0, $t1
+	lw $v0, 0($t0)		# cor
 	
 	jr $ra
 
-
-# Repinta o fundo em todos os tiles que um sprite 8x8 cobre.
-# Alinhado a um tile, cobre 1 tile; entre dois tiles, cobre 2.
-#	a0: Posicao x do sprite em unidades
-#	a1: Posicao y do sprite em unidades
-EraseSprite:
-	addi $sp, $sp, -24
+# Desenha um sprite 8x8 ja misturado com o fundo: onde o sprite eh
+# transparente, pinta a cor do fundo. Cada ponto recebe a cor final
+# em uma unica escrita.
+#	a0: Posicao x em unidades
+#	a1: Posicao y em unidades
+#	a2: Endereco da matriz do sprite
+DrawSpriteOnBackground:
+	addi $sp, $sp, -28
 	sw $ra, 0($sp)
 	sw $s0, 4($sp)
 	sw $s1, 8($sp)
 	sw $s2, 12($sp)
 	sw $s3, 16($sp)
 	sw $s4, 20($sp)
+	sw $s5, 24($sp)
 	
-	srl $s4, $a0, 3		# s4 = primeiro tile x coberto (fica fixo)
-	addi $t0, $a0, 7	# ultimo ponto do sprite em x = x + 7
-	srl $s2, $t0, 3		# s2 = ultimo tile x coberto
+	move $s0, $a0		# s0 = x do inicio da linha
+	move $s1, $a1		# s1 = y da linha atual
+	move $s2, $a2		# s2 = ponto atual do sprite
+	addi $s5, $a1, 8	# s5 = y onde termina (exclusivo)
 	
-	srl $s1, $a1, 3		# s1 = tile y atual (comeca no primeiro coberto)
-	addi $t0, $a1, 7	# ultimo ponto do sprite em y = y + 7
-	srl $s3, $t0, 3		# s3 = ultimo tile y coberto
-	
-	EraseLoopY:
-	bgt $s1, $s3, EraseEnd
-		move $s0, $s4		# s0 = tile x atual, volta ao inicio da linha
-		EraseLoopX:
-		bgt $s0, $s2, EraseLoopXEnd
-			move $a0, $s0
+	DSOBRow:
+	beq $s1, $s5, DSOBEnd
+		move $a0, $s0
+		move $a1, $s1
+		jal GetUnitAdress
+		move $s3, $v0		# s3 = endereco do ponto atual na tela
+		move $s4, $s0		# s4 = x do ponto atual
+		
+		DSOBCol:
+		addi $t0, $s0, 8
+		beq $s4, $t0, DSOBColEnd
+			lbu $t0, 0($s2)		# indice da cor no sprite
+			beq $t0, $zero, DSOBBackground
+			
+			sll $t0, $t0, 2		# Ponto do sprite: busca a cor
+			la $t1, Colors
+			add $t0, $t0, $t1
+			lw $v0, 0($t0)
+			j DSOBPaint
+			
+			DSOBBackground:		# Ponto transparente: usa a cor do fundo
+			move $a0, $s4
 			move $a1, $s1
-			jal DrawTile
-			addi $s0, $s0, 1
-		j EraseLoopX
-		EraseLoopXEnd:
+			jal BackgroundColor
+			
+			DSOBPaint:
+			sw $v0, 0($s3)
+			addi $s2, $s2, 1
+			addi $s3, $s3, 4
+			addi $s4, $s4, 1
+		j DSOBCol
+		DSOBColEnd:
 		addi $s1, $s1, 1
-	j EraseLoopY
-	EraseEnd:
+	j DSOBRow
+	DSOBEnd:
 	
 	lw $ra, 0($sp)
 	lw $s0, 4($sp)
@@ -271,7 +295,75 @@ EraseSprite:
 	lw $s2, 12($sp)
 	lw $s3, 16($sp)
 	lw $s4, 20($sp)
-	addi $sp, $sp, 24
+	lw $s5, 24($sp)
+	addi $sp, $sp, 28
+	
+	jr $ra
+
+# Repinta o fundo nos pontos da posicao antiga de um sprite 8x8
+# que nao ficam dentro da posição nova (a parte que ficou descoberta).
+#	a0: x antigo   a1: y antigo   (em unidades)
+#	a2: x novo     a3: y novo     (em unidades)
+RestoreBackground:
+	addi $sp, $sp, -32
+	sw $ra, 0($sp)
+	sw $s0, 4($sp)
+	sw $s1, 8($sp)
+	sw $s2, 12($sp)
+	sw $s3, 16($sp)
+	sw $s4, 20($sp)
+	sw $s5, 24($sp)
+	sw $s6, 28($sp)
+	
+	move $s0, $a0		# s0 = x do inicio da linha (posicao antiga)
+	move $s1, $a1		# s1 = y da linha atual
+	move $s2, $a2		# s2 = x novo
+	move $s3, $a3		# s3 = y novo
+	addi $s6, $a1, 8	# s6 = y onde termina (exclusivo)
+	
+	RBRow:
+	beq $s1, $s6, RBEnd
+		move $a0, $s0
+		move $a1, $s1
+		jal GetUnitAdress
+		move $s5, $v0		# s5 = endereço do ponto atual na tela
+		move $s4, $s0		# s4 = x do ponto atual
+		
+		RBCol:
+		addi $t0, $s0, 8
+		beq $s4, $t0, RBColEnd
+
+			# O ponto esta dentro da posicao nova? O sprite vai cobri-lo: pula.
+			sub $t0, $s4, $s2
+			sltiu $t0, $t0, 8	# 1 se 0 <= x - xNovo < 8
+			sub $t1, $s1, $s3
+			sltiu $t1, $t1, 8	# 1 se 0 <= y - yNovo < 8
+			and $t0, $t0, $t1
+			bne $t0, $zero, RBNext
+			
+			move $a0, $s4
+			move $a1, $s1
+			jal BackgroundColor
+			sw $v0, 0($s5)
+			
+			RBNext:
+			addi $s4, $s4, 1
+			addi $s5, $s5, 4
+		j RBCol
+		RBColEnd:
+		addi $s1, $s1, 1
+	j RBRow
+	RBEnd:
+	
+	lw $ra, 0($sp)
+	lw $s0, 4($sp)
+	lw $s1, 8($sp)
+	lw $s2, 12($sp)
+	lw $s3, 16($sp)
+	lw $s4, 20($sp)
+	lw $s5, 24($sp)
+	lw $s6, 28($sp)
+	addi $sp, $sp, 32
 	
 	jr $ra
 
@@ -281,6 +373,15 @@ InitGame:
 	sw $ra, 0($sp)
 	
 	jal DrawBackground
+
+	# Desenha o jogador na posicao inicial
+	la $t0, PlayerX
+	lw $a0, 0($t0)
+	la $t0, PlayerY
+	lw $a1, 0($t0)
+	la $a2, Player
+	jal DrawSpriteOnBackground
+
 	
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
@@ -407,13 +508,6 @@ UpdatePlayer:
 	lw $t1, 0($t0)
 	beq $t1, $zero, UpdateDone	# Parado: nada a fazer
 	
-	# apaga o jogador da posicao atual (repinta a grama)
-	la $t2, PlayerX
-	lw $a0, 0($t2)
-	la $t2, PlayerY
-	lw $a1, 0($t2)
-	jal EraseSprite
-	
 	# Avanca 1 unidade em direcao ao destino (eixo X)
 	la $t0, PlayerX
 	lw $a0, 0($t0)
@@ -457,26 +551,61 @@ UpdatePlayer:
 	jr $ra
 
 
+# Redesenha o jogador so quando ele muda de lugar
 Render:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
+	# Se a posição atual e a mesma que esta na tela, nao ha o que fazer
 	la $t0, PlayerX
-	la $t1, PlayerY
+	lw $t1, 0($t0)
+	la $t0, DrawnUnitX
+	lw $t2, 0($t0)
+	bne $t1, $t2, RenderDraw
+	
+	la $t0, PlayerY
+	lw $t1, 0($t0)
+	la $t0, DrawnUnitY
+	lw $t2, 0($t0)
+	beq $t1, $t2, RenderDone
+	
+	RenderDraw:
+	# 1) Repinta o fundo na parte da posicao antiga que ficou descoberta
+	la $t0, DrawnUnitX
 	lw $a0, 0($t0)
-	lw $a1, 0($t1)
-	jal GetUnitAdress
+	la $t0, DrawnUnitY
+	lw $a1, 0($t0)
+	la $t0, PlayerX
+	lw $a2, 0($t0)
+	la $t0, PlayerY
+	lw $a3, 0($t0)
+	jal RestoreBackground
 	
-	la $a0, Player
-	move $a1, $v0
-	li $a2, 8
-	li $a3, 8
-	jal DrawSprite
+	# 2) Desenha o jogador na posicao nova, ja com o fundo por trás
+	la $t0, PlayerX
+	lw $a0, 0($t0)
+	la $t0, PlayerY
+	lw $a1, 0($t0)
+	la $a2, Player
+	jal DrawSpriteOnBackground
 	
+	# 3) Guarda onde o jogador ficou desenhado
+	la $t0, PlayerX
+	lw $t1, 0($t0)
+	la $t0, DrawnUnitX
+	sw $t1, 0($t0)
+	
+	la $t0, PlayerY
+	lw $t1, 0($t0)
+	la $t0, DrawnUnitY
+	sw $t1, 0($t0)
+	
+	RenderDone:
 	lw $ra, 0($sp)
-	add $sp, $sp, 4
+	addi $sp, $sp, 4
 	
 	jr $ra
+
 
 Exit:
 	li $v0, 10
