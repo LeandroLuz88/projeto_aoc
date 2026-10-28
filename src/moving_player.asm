@@ -17,6 +17,9 @@ DrawnUnitY: .word 56
 TargetUnitX: .word 56
 TargetUnitY: .word 56
 
+# Unidades andadas por frame (8 unidades = 1 tile)
+PlayerSpeed: .word 3 # da pra deixar em 2 ou 3
+
 # Indica de ha movimento ou nao, 0 == parado, 1 == movimentando
 Moving: .word 0
 
@@ -486,17 +489,32 @@ StartMove:
 	j InputDone
 
 
-# Aproxima um valor do destino em 1 unidade
+# Aproxima um valor do seu destino, sem passar dele
 #	a0: Valor atual
 #	a1: Destino
-#	v0: Novo valor (atual + 1, atual - 1 ou o próprio atual)
+#	a2: Velocidade (quanto andar por chamada, > 0)
+#	v0: Novo valor
 StepToward:
-	slt $t0, $a0, $a1	# 1 se atual < destino
-	slt $t1, $a1, $a0	# 1 se destino < atual
-	add $v0, $a0, $t0
-	sub $v0, $v0, $t1
+	sub $t0, $a1, $a0	# t0 = distancia ate o destino (com sinal)
+	bltz $t0, StepBack
 	
+	# Destino a frente (ou ja chegou)
+	slt $t1, $a2, $t0	# 1 se velocidade < distancia
+	beq $t1, $zero, StepArrive
+	add $v0, $a0, $a2
 	jr $ra
+	
+	StepBack:
+	sub $t0, $zero, $t0	# t0 = |distancia|
+	slt $t1, $a2, $t0
+	beq $t1, $zero, StepArrive
+	sub $v0, $a0, $a2
+	jr $ra
+	
+	StepArrive:
+	move $v0, $a1		# Se falta menos que um passo, para exatamente no destino
+	jr $ra
+
 
 
 # Atualiza o estado do jogador a cada frame
@@ -508,20 +526,24 @@ UpdatePlayer:
 	lw $t1, 0($t0)
 	beq $t1, $zero, UpdateDone	# Parado: nada a fazer
 	
-	# Avanca 1 unidade em direcao ao destino (eixo X)
+	# Avanca PlayerSpeed unidades em direcao ao destino (eixo X)
 	la $t0, PlayerX
 	lw $a0, 0($t0)
 	la $t0, TargetUnitX
 	lw $a1, 0($t0)
+	la $t0, PlayerSpeed
+	lw $a2, 0($t0)
 	jal StepToward
 	la $t0, PlayerX
 	sw $v0, 0($t0)
 	
-	# Idem no eixo Y
+	# O mesmo no eixo Y
 	la $t0, PlayerY
 	lw $a0, 0($t0)
 	la $t0, TargetUnitY
 	lw $a1, 0($t0)
+	la $t0, PlayerSpeed
+	lw $a2, 0($t0)
 	jal StepToward
 	la $t0, PlayerY
 	sw $v0, 0($t0)
