@@ -8,9 +8,13 @@ main:
 	jal InitGame
 	
 	GameLoop:
+	
+		jal ReadInput
+		jal UpdatePlayer
+		jal RenderPlayer
 		
 		li $v0, 32
-		li $a0, 30	# 30 ps de atraso a cada loop
+		li $a0, 16	# 30 ps de atraso a cada loop
 		syscall
 	j GameLoop
 	
@@ -23,3 +27,5 @@ Exit:
 	syscall
 
 .include "render.asm"
+.include "sprites.asm"
+.include "player.asm"

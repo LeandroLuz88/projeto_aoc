@@ -133,7 +133,7 @@ GetTileAddress:
 	
 	jr $ra
 	
-
+	
 # Funcao que retorna o endereco na memoria de uma posicao em unidades
 # 	a0: Posicao x em unidades
 #	a1: Posicao y em unidades
@@ -147,6 +147,28 @@ GetUnitAddress:
 	add $v0, $v0, $a1
 	
 	jr $ra
+	
+	
+# Retorna a cor do fundo em uma posição
+#	a0: Posição x em unidades
+#	a1: Posição y em unidades
+#	v0: Cor (0x00RRGGBB)
+BackgroundColor:
+	andi $t0, $a0, 15	# x mod 16
+	andi $t1, $a1, 15	# y mod 16
+	sll $t1, $t1, 4		# (y mod 16) * 16 = inicio da linha no sprite
+	add $t0, $t0, $t1	# indice do ponto no sprite
+	la $t1, Grass
+	add $t0, $t0, $t1
+	lbu $t0, 0($t0)		# indice da cor
+	
+	sll $t0, $t0, 2		# indice * 4
+	la $t1, Colors
+	add $t0, $t0, $t1
+	lw $v0, 0($t0)		# cor
+	
+	jr $ra
+
 
 # Funcao que inicializa elementos como
 # interface, mapa e jogador.
@@ -156,10 +178,17 @@ InitGame:
 	
 	jal PaintBackground
 	jal DrawMap
+	
+	# Desenha o jogador na posicao inicial
+	la $t0, PlayerX
+	lw $a0, 0($t0)
+	la $t0, PlayerY
+	lw $a1, 0($t0)
+	la $a2, Player
+	jal DrawSpriteOnBackground
 
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
 	jr $ra
 
-.include "sprites.asm"
