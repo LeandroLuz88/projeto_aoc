@@ -5,6 +5,8 @@
 #	- Display Height:	512
 #	- Base address:		0x100040000 (heap)
 
+# Endereço base do mapa: 0x10044040
+
 # Variáveis:
 #	- Map
 
@@ -54,7 +56,7 @@ DrawMap:
 	li $t0, 0		# índice i
 	li $t1, 0		# indice j
 	li $t2, 15 		# 15x15 tiles
-	li $t3, 0x10044040	# 0x17862060	#0x100480C0	# Endereço base do mapa (Endereço base + 251936960)
+	li $t3, 0x10044040	# Endereço base do mapa (Endereço base + 251936960)
 	la $t4, Map		# Matriz de mapa
 	
 	# Argumentos da função DrawSprite constantes
@@ -117,6 +119,35 @@ DrawMap:
 	
 	jr $ra
 	
+# Funcao que retorna o endereço na memoria do Tile
+# 	a0: Posicao x do tile
+#	a1: Posicao y do tile
+#	v0: Endereco do tile
+GetTileAddress:
+	sll $a0, $a0, 6		# x * 16 * 4 = 2^6
+	sll $a1, $a1, 14	# y * 512 * 8 * 4 = y * 2^14
+	
+	li $v0, 0x10044040
+	add $v0, $v0, $a0
+	add $v0, $v0, $a1
+	
+	jr $ra
+	
+
+# Funcao que retorna o endereco na memoria de uma posicao em unidades
+# 	a0: Posicao x em unidades
+#	a1: Posicao y em unidades
+#	v0: Endereco da unidade
+GetUnitAddress:
+	sll $a0, $a0, 2		# x * 4 bytes = 2^2
+	sll $a1, $a1, 11	# y * 512 * 4 = y * 2^11
+	
+	li $v0, 0x10044040	# Endereco base do mapa
+	add $v0, $v0, $a0
+	add $v0, $v0, $a1
+	
+	jr $ra
+
 # Funcao que inicializa elementos como
 # interface, mapa e jogador.
 InitGame:
