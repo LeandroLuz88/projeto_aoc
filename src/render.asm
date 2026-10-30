@@ -5,6 +5,13 @@
 #	- Display Height:	512
 #	- Base address:		0x100040000 (heap)
 
+# Variáveis:
+#	- Map
+
+# Funções:
+#	- PaintBackground
+#	- DrawMap
+
 .data
 
 .align 0
