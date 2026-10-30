@@ -116,5 +116,19 @@ DrawMap:
 	addi $sp, $sp, 4
 	
 	jr $ra
+	
+# Funcao que inicializa elementos como
+# interface, mapa e jogador.
+InitGame:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal PaintBackground
+	jal DrawMap
+
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
 
 .include "sprites.asm"
