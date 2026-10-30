@@ -1,6 +1,6 @@
 # Configuracoes do bitmap:
-# 	- Unit W/H: 16
-# 	- Display W/H: 256
+# 	- Unit W/H: 4
+# 	- Display W/H: 512
 # 128x128 unidades no display
 
 .data
