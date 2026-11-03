@@ -5,6 +5,15 @@
 #	- Display Height:	512
 #	- Base address:		0x100040000 (heap)
 
+# Endereço base do mapa: 0x10044040
+
+# Variáveis:
+#	- Map
+
+# Funções:
+#	- PaintBackground
+#	- DrawMap
+
 .data
 
 .align 0
@@ -47,7 +56,7 @@ DrawMap:
 	li $t0, 0		# índice i
 	li $t1, 0		# indice j
 	li $t2, 15 		# 15x15 tiles
-	li $t3, 0x10044040	# 0x17862060	#0x100480C0	# Endereço base do mapa (Endereço base + 251936960)
+	li $t3, 0x10044040	# Endereço base do mapa (Endereço base + 251936960)
 	la $t4, Map		# Matriz de mapa
 	
 	# Argumentos da função DrawSprite constantes
@@ -109,5 +118,77 @@ DrawMap:
 	addi $sp, $sp, 4
 	
 	jr $ra
+	
+# Funcao que retorna o endereço na memoria do Tile
+# 	a0: Posicao x do tile
+#	a1: Posicao y do tile
+#	v0: Endereco do tile
+GetTileAddress:
+	sll $a0, $a0, 6		# x * 16 * 4 = 2^6
+	sll $a1, $a1, 14	# y * 512 * 8 * 4 = y * 2^14
+	
+	li $v0, 0x10044040
+	add $v0, $v0, $a0
+	add $v0, $v0, $a1
+	
+	jr $ra
+	
+	
+# Funcao que retorna o endereco na memoria de uma posicao em unidades
+# 	a0: Posicao x em unidades
+#	a1: Posicao y em unidades
+#	v0: Endereco da unidade
+GetUnitAddress:
+	sll $a0, $a0, 2		# x * 4 bytes = 2^2
+	sll $a1, $a1, 11	# y * 512 * 4 = y * 2^11
+	
+	li $v0, 0x10044040	# Endereco base do mapa
+	add $v0, $v0, $a0
+	add $v0, $v0, $a1
+	
+	jr $ra
+	
+	
+# Retorna a cor do fundo em uma posição
+#	a0: Posição x em unidades
+#	a1: Posição y em unidades
+#	v0: Cor (0x00RRGGBB)
+BackgroundColor:
+	andi $t0, $a0, 15	# x mod 16
+	andi $t1, $a1, 15	# y mod 16
+	sll $t1, $t1, 4		# (y mod 16) * 16 = inicio da linha no sprite
+	add $t0, $t0, $t1	# indice do ponto no sprite
+	la $t1, Grass
+	add $t0, $t0, $t1
+	lbu $t0, 0($t0)		# indice da cor
+	
+	sll $t0, $t0, 2		# indice * 4
+	la $t1, Colors
+	add $t0, $t0, $t1
+	lw $v0, 0($t0)		# cor
+	
+	jr $ra
 
-.include "sprites.asm"
+
+# Funcao que inicializa elementos como
+# interface, mapa e jogador.
+InitGame:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal PaintBackground
+	jal DrawMap
+	
+	# Desenha o jogador na posicao inicial
+	la $t0, PlayerX
+	lw $a0, 0($t0)
+	la $t0, PlayerY
+	lw $a1, 0($t0)
+	la $a2, Player
+	jal DrawSpriteOnBackground
+
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
+
