@@ -4,7 +4,6 @@
 .globl main
 
 main:
-
 	jal InitGame
 	
 	GameLoop:
@@ -29,3 +28,5 @@ Exit:
 .include "render.asm"
 .include "sprites.asm"
 .include "player.asm"
+.include "enemy.asm"
+.include "map.asm"
