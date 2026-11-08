@@ -5,13 +5,13 @@
 #	- Display Height:	512
 #	- Base address:		0x100040000 (heap)
 
-# Endereço base do mapa: 0x10044040
-
 # Funções:
 #	- PaintBackground
 #	- DrawMap
 
 .data
+
+MapBase: .word 0x10044040	# Endereço base do mapa
 
 .text
 
@@ -106,7 +106,7 @@ GetTileAddress:
 	sll $a0, $a0, 6		# x * 16 * 4 = 2^6
 	sll $a1, $a1, 14	# y * 512 * 8 * 4 = y * 2^14
 	
-	li $v0, 0x10044040
+	li $v0, 0x10044040	# Endereco base do mapa
 	add $v0, $v0, $a0
 	add $v0, $v0, $a1
 	
@@ -133,12 +133,27 @@ GetUnitAddress:
 #	a1: Posição y em unidades
 #	v0: Cor (0x00RRGGBB)
 BackgroundColor:
+	# busca tipo de sprite do fundo do tile
+	srl $t2, $a0, 4		# floor(x/16) = x_tile
+	srl $t3, $a1, 4		# floor(y/16) = y_tile
+	sll $t4, $t3, 4		# y_tile * 16
+	sub $t3, $t4, $t3	# (y_tile * 16) - y_tile = y_tile * 15
+	add $t2, $t2, $t3
+	la $t3, Map
+	add $t2, $t2, $t3	# endereco do indice do sprite de fundo
+	lbu $t2, 0($t2)		# indice do sprite (0 = Grass, 1 = Dirt)
+	
+	# busca endereco do sprite do fundo do tile do ponto
+	sll $t2, $t2,  2
+	la $t3, MapSprite
+	add $t2, $t2, $t3	# endereco do endereco do sprite de fundo
+	lw $t2, 0($t2)		# endereco do sprite de fundo
+	
 	andi $t0, $a0, 15	# x mod 16
 	andi $t1, $a1, 15	# y mod 16
 	sll $t1, $t1, 4		# (y mod 16) * 16 = inicio da linha no sprite
 	add $t0, $t0, $t1	# indice do ponto no sprite
-	la $t1, Grass
-	add $t0, $t0, $t1
+	add $t0, $t0, $t2
 	lbu $t0, 0($t0)		# indice da cor
 	
 	sll $t0, $t0, 2		# indice * 4

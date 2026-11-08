@@ -18,6 +18,7 @@ Map:	# 15x15 tiles
     .byte 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
+.align 2
 # Vetor de sprites do mapa
 MapSprite:
 	.word Grass	# 0
