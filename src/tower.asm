@@ -72,3 +72,76 @@ BuildingEnabled: .word 1
 # Ultima posicao do jogador para a qual as torres vizinhas foram redesenhadas
 LastRedrawX: .word 112
 LastRedrawY: .word 112
+
+
+
+.text
+
+# a0: tile X
+# a1: tile Y
+# v0: endereco do byte correspondente em Map
+MapTileAddress:
+    mul $t0, $a1, 15       # y * numero de colunas
+    add $t0, $t0, $a0      # y * 15 + x
+    la $t1, Map
+    add $v0, $t1, $t0
+    jr $ra
+
+
+# v0: endereco de um slot vazio em Towers, 0 se todos estiverem ocupados
+FindFreeTowerSlot:
+    la $t0, Towers
+    li $t1, 0
+FindFreeTowerSlotLoop:
+    beq $t1, MAX_TOWERS, FindFreeTowerSlotNone
+    lw $t2, T_STATE($t0)
+    beq $t2, STATE_EMPTY, FindFreeTowerSlotFound
+    addi $t0, $t0, TOWER_SIZE
+    addi $t1, $t1, 1
+    j FindFreeTowerSlotLoop
+FindFreeTowerSlotFound:
+    move $v0, $t0
+    jr $ra
+FindFreeTowerSlotNone:
+    move $v0, $zero
+    jr $ra
+
+
+# a0: tile X
+# a1: tile Y
+# v0: endereco da torre nesse tile, 0 se nao houver
+FindTowerAt:
+    la $t0, Towers
+    li $t1, 0
+FindTowerAtLoop:
+    beq $t1, MAX_TOWERS, FindTowerAtNone
+    lw $t2, T_STATE($t0)
+    beq $t2, STATE_EMPTY, FindTowerAtNext
+    lw $t3, T_TILEX($t0)
+    bne $t3, $a0, FindTowerAtNext
+    lw $t3, T_TILEY($t0)
+    bne $t3, $a1, FindTowerAtNext
+    move $v0, $t0
+    jr $ra
+FindTowerAtNext:
+    addi $t0, $t0, TOWER_SIZE
+    addi $t1, $t1, 1
+    j FindTowerAtLoop
+FindTowerAtNone:
+    move $v0, $zero
+    jr $ra
+
+
+# Linha de TowerStats que vale para o tipo e o nivel atuais da torre
+# a0: endereco da torre
+# v0: endereco da linha (STAT_RANGE, STAT_DAMAGE, STAT_COOLDOWN, STAT_EFFECT)
+GetTowerStats:
+    lw $t0, T_TYPE($a0)
+    mul $t0, $t0, MAX_LEVEL     # primeira linha do tipo
+    lw $t1, T_LEVEL($a0)
+    add $t0, $t0, $t1
+    addi $t0, $t0, -1           # nivel comeca em 1
+    mul $t0, $t0, STAT_SIZE
+    la $t1, TowerStats
+    add $v0, $t1, $t0
+    jr $ra
