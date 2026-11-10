@@ -145,3 +145,78 @@ GetTowerStats:
     la $t1, TowerStats
     add $v0, $t1, $t0
     jr $ra
+
+
+# a0: tipo da torre 
+# v0: 1 se iniciou a construcao, 0 se nao iniciou
+TryBuildTower:
+    addi $sp, $sp, -24
+    sw $ra, 0($sp)
+    sw $s0, 4($sp)
+    sw $s1, 8($sp)
+    sw $s2, 12($sp)
+    sw $s3, 16($sp)
+    sw $s4, 20($sp)
+
+    move $s0, $a0
+
+    la $t0, BuildingEnabled
+    lw $t0, 0($t0)
+    beq $t0, $zero, TryBuildTowerFail
+
+    # PlayerX/Y sao em unidades. Dividir por 16 converte em tile
+    la $t0, PlayerX
+    lw $t0, 0($t0)
+    srl $s1, $t0, 4       # s1 = tile X do jogador
+    la $t0, PlayerY
+    lw $t0, 0($t0)
+    srl $s2, $t0, 4       # s2 = tile Y do jogador
+
+    # O tile deve ser grama: Map[tile] == 0
+    move $a0, $s1
+    move $a1, $s2
+    jal MapTileAddress
+    move $s4, $v0
+    lbu $t0, 0($s4)
+    bne $t0, $zero, TryBuildTowerFail
+
+    jal FindFreeTowerSlot
+    beq $v0, $zero, TryBuildTowerFail
+    move $s3, $v0
+
+    # Parte de economia quando tiver
+    # Se nao tem dinheiro, vai pro TryBuildTowerFail
+    # Se tiver vai descontar aqui
+
+    # O tile agora esta ocupado por uma torre
+    li $t0, TILE_TOWER
+    sb $t0, 0($s4)
+
+    # Inicializa a torre em construcao
+    li $t0, STATE_BUILDING
+    sw $t0, T_STATE($s3)
+    sw $s1, T_TILEX($s3)
+    sw $s2, T_TILEY($s3)
+    sw $s0, T_TYPE($s3)
+    li $t0, 1
+    sw $t0, T_LEVEL($s3)
+    li $t0, BUILD_FRAMES
+    sw $t0, T_TIMER($s3)
+    sw $zero, T_COOLDOWN($s3)
+    sw $zero, T_TARGET($s3)
+
+    li $v0, 1
+    j TryBuildTowerEnd
+
+TryBuildTowerFail:
+    move $v0, $zero
+
+TryBuildTowerEnd:
+    lw $ra, 0($sp)
+    lw $s0, 4($sp)
+    lw $s1, 8($sp)
+    lw $s2, 12($sp)
+    lw $s3, 16($sp)
+    lw $s4, 20($sp)
+    addi $sp, $sp, 24
+    jr $ra
