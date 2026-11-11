@@ -39,6 +39,16 @@
 .eqv STAT_COOLDOWN    8
 .eqv STAT_EFFECT     12
 
+# Barra de progresso da construcao, em unidades do bitmap
+.eqv BAR_WIDTH        12
+.eqv BAR_HEIGHT        5
+.eqv BAR_OFFSET_X      2
+.eqv BAR_OFFSET_Y      6
+.eqv BAR_ROW_SKIP   2000 # 512 unidades por linha * 4 bytes - BAR_WIDTH * 4 bytes
+.eqv BAR_FILL_COLOR   0x40A107 # verde
+.eqv BAR_EMPTY_COLOR  0x484848 # cinza escuro
+
+
 .data
 
 # Uma linha por tipo e nivel, na ordem: simples 1-3, gelo 1-3, rifle 1-3, canhao 1-3
@@ -62,6 +72,10 @@ TowerStats:
     .word 2,  15, 100, 1
     .word 2,  22,  80, 1
     .word 3,  30,  64, 2
+
+TowerSprites:
+    .word TowerSimple, TowerIce, TowerRifle, TowerCannon
+
 
 # MAX_TOWERS * TOWER_SIZE = 32 * 32
 Towers: .space 1024
@@ -205,6 +219,9 @@ TryBuildTower:
     sw $zero, T_COOLDOWN($s3)
     sw $zero, T_TARGET($s3)
 
+    move $a0, $s3
+    jal DrawTower
+
     li $v0, 1
     j TryBuildTowerEnd
 
@@ -219,4 +236,96 @@ TryBuildTowerEnd:
     lw $s3, 16($sp)
     lw $s4, 20($sp)
     addi $sp, $sp, 24
+    jr $ra
+
+
+# Desenha a barra de progresso da construcao no tile da torre
+# Pinta a barra inteira a cada chamada (parte cheia + parte vazia),
+# para nao precisa apagar o desenho anterior
+# a0: endereco da torre em construcao
+DrawBuildProgress:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    # colunas cheias = (BUILD_FRAMES - T_TIMER) * BAR_WIDTH / BUILD_FRAMES
+    lw $t0, T_TIMER($a0)
+    li $t1, BUILD_FRAMES
+    sub $t1, $t1, $t0
+    mul $t1, $t1, BAR_WIDTH
+    li $t0, BUILD_FRAMES
+    div $t1, $t0
+    mflo $t1 # t1 = colunas cheias 
+
+    # canto superior esquerdo da barra, em unidades
+    lw $t2, T_TILEX($a0)
+    sll $t2, $t2, 4
+    addi $t2, $t2, BAR_OFFSET_X
+    lw $t3, T_TILEY($a0)
+    sll $t3, $t3, 4
+    addi $a1, $t3, BAR_OFFSET_Y
+    move $a0, $t2
+    jal GetUnitAddress # v0 = endereco da unidade, usa so a0, a1 e v0
+    move $t4, $v0
+
+    li $t5, 0 # linha
+
+BuildBarRow:
+    beq $t5, BAR_HEIGHT, BuildBarEnd
+    li $t6, 0 # coluna
+
+BuildBarCol:
+    beq $t6, BAR_WIDTH, BuildBarNextRow
+    li $t8, BAR_EMPTY_COLOR
+    slt $t7, $t6, $t1 # 1 se esta coluna ja esta cheia
+    beq $t7, $zero, BuildBarPaint
+    li $t8, BAR_FILL_COLOR
+
+BuildBarPaint:
+    sw $t8, 0($t4)
+    addi $t4, $t4, 4
+    addi $t6, $t6, 1
+    j BuildBarCol
+
+BuildBarNextRow:
+    addi $t4, $t4, BAR_ROW_SKIP
+    addi $t5, $t5, 1
+    j BuildBarRow
+
+BuildBarEnd:
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
+
+# a0: endereco da torre
+DrawTower:
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
+    lw $t0, T_TILEX($a0)
+    sll $t0, $t0, 4       # tile X * 16 = unidade X
+    lw $t1, T_TILEY($a0)
+    sll $t1, $t1, 4       # tile Y * 16 = unidade Y
+
+    lw $t2, T_STATE($a0)
+    beq $t2, STATE_BUILDING, DrawTowerBuilding
+
+    lw $t3, T_TYPE($a0)
+    sll $t3, $t3, 2       # cada endereco ocupa 4 bytes
+    la $t4, TowerSprites
+    add $t4, $t4, $t3
+    lw $a2, 0($t4)
+    j DrawTowerPaint
+
+DrawTowerBuilding:
+    jal DrawBuildProgress     # a0 ainda e o endereco da torre
+    j DrawTowerEnd
+
+DrawTowerPaint:
+    move $a0, $t0
+    move $a1, $t1
+    jal DrawSpriteOnBackground
+
+DrawTowerEnd:
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
     jr $ra

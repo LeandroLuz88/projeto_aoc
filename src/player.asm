@@ -36,6 +36,17 @@ ReadInput:
 	
 	lw $t1, 4($t0)
 	
+	# 1, 2, 3 e 4 constroem simples, gelo, rifle e canhao
+    # ASCII de '1' eh 49
+    addi $t0, $t1, -49
+    sltiu $t2, $t0, 4
+    beq $t2, $zero, NotBuild
+    move $a0, $t0
+    jal TryBuildTower
+    j InputDone
+
+	NotBuild:
+
 	# w
 	li $t0, 119
 	beq $t1, $t0, MoveUp

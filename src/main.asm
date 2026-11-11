@@ -29,3 +29,4 @@ Exit:
 .include "render.asm"
 .include "sprites.asm"
 .include "player.asm"
+.include "tower.asm"
