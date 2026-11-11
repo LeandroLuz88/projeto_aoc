@@ -11,6 +11,7 @@ main:
 	
 		jal ReadInput
 		jal UpdatePlayer
+		jal UpdateTowers
 		jal RenderPlayer
 		
 		li $v0, 32

@@ -329,3 +329,69 @@ DrawTowerEnd:
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     jr $ra
+
+
+# Termina a construcao: a torre passa a atacar
+# quem precisar do atributo da torre busca em TowerStats com GetTowerStats.
+# a0: endereco da torre em construcao
+ActivateTower:
+    addi $sp, $sp, -8
+    sw $ra, 0($sp)
+    sw $s0, 4($sp)
+
+    move $s0, $a0
+
+    sw $zero, T_COOLDOWN($s0) # pode atacar assim que ficar pronta
+    li $t0, STATE_ACTIVE
+    sw $t0, T_STATE($s0)
+
+    move $a0, $s0
+    jal DrawTower
+
+    lw $ra, 0($sp)
+    lw $s0, 4($sp)
+    addi $sp, $sp, 8
+    jr $ra
+
+
+# Atualiza todas as torres
+# Chamar uma vez por frame no GameLoop.
+UpdateTowers:
+    addi $sp, $sp, -12
+    sw $ra, 0($sp)
+    sw $s0, 4($sp)
+    sw $s1, 8($sp)
+
+    la $s0, Towers
+    li $s1, 0
+
+UpdateTowersLoop:
+    beq $s1, MAX_TOWERS, UpdateTowersEnd
+    lw $t0, T_STATE($s0)
+    beq $t0, STATE_BUILDING, UpdateTowerBuilding
+    j UpdateTowerNext
+
+UpdateTowerBuilding:
+    lw $t1, T_TIMER($s0)
+    addi $t1, $t1, -1
+    sw $t1, T_TIMER($s0)
+    blez $t1, UpdateTowerBuilt
+    move $a0, $s0
+    jal DrawTower # atualiza a barra de progresso
+    j UpdateTowerNext
+    
+UpdateTowerBuilt:
+    move $a0, $s0
+    jal ActivateTower
+
+UpdateTowerNext:
+    addi $s0, $s0, TOWER_SIZE
+    addi $s1, $s1, 1
+    j UpdateTowersLoop
+
+UpdateTowersEnd:
+    lw $ra, 0($sp)
+    lw $s0, 4($sp)
+    lw $s1, 8($sp)
+    addi $sp, $sp, 12
+    jr $ra
