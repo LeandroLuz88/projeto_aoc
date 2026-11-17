@@ -214,6 +214,12 @@ EraseAllEnemies:
 		lbu $t0, 0($s2)
 		beqz $t0, EAEBranch0
 		
+		# Se indice de reservado for 2, mude para 0
+		bne $t0, 2, EAEBranch3
+		sb $zero, 0($s2)
+		j EAELoopExit
+		EAEBranch3:
+		
 		# identifica tiles
 		lbu $s3, 1($s2)		# X
 		lbu $s4, 2($s2)		# Y
@@ -283,3 +289,143 @@ EraseAllEnemies:
 	addi $sp, $sp, 4
 	
 	jr $ra
+
+
+# Apaga um inimigo especifico.
+#	- a0: indice do inimigo
+EraseEnemy:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	la $s2, Enemies
+	sll $t0, $a0, 3
+	add $s2, $s2, $t0
+	
+	# identifica tiles
+	lbu $s3, 1($s2)		# X
+	lbu $s4, 2($s2)		# Y
+	addi $a0, $s3, 15	# X da ponta superior direita
+	addi $a1, $s4, 15	# Y da ponta inferior esquerda
+	andi $s3, $s3, 0xFFF0	# trunca X para o maior multiplo de 16
+	andi $s4, $s4, 0xFFF0	# trunca Y para o maior multiplo de 16
+	andi $a0, $a0, 0xFFF0	# trunca X da ponta superior direita
+	andi $a1, $a1, 0xFFF0	# trunca Y da ponta superior direita
+	
+	# 1) Caso o inimigo esteja ocupando 2 tiles no eixo
+	# horizontal, pinte antes o da direita
+	beq $s3, $a0, EEBranch1
+		
+	move $a1, $s4
+	
+	jal GetUnitAddress
+		
+	la $a0, Dirt
+	move $a1, $v0
+	li $a2, 16
+	li $a3, 16
+	
+	jal DrawSprite
+	
+	j EEBranch2
+	
+	# 2) Caso o inimigo esteja ocupando 2 tiles no eixo
+	# vertical, pinte antes o de baixo
+	EEBranch1:
+	beq $s4, $a1, EEBranch2
+	
+	move $a0, $s3
+		
+	jal GetUnitAddress
+		
+	la $a0, Dirt
+	move $a1, $v0
+	li $a2, 16
+	li $a3, 16
+		
+	jal DrawSprite
+		
+	# 3) Pinta o tile da posicao do inimigo truncada
+	EEBranch2:
+		
+	move $a0, $s3
+	move $a1, $s4
+		
+	jal GetUnitAddress
+		
+	la $a0, Dirt
+	move $a1, $v0
+	li $a2, 16
+	li $a3, 16
+		
+	jal DrawSprite
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
+
+
+# Mata um determinado inimigo e organiza o array de inimigos
+#	- a0: indice do inimigo
+KillEnemy:	
+	lw $t1, AliveEnemies
+	
+	# Se o array estiver vazio, encerra
+	bnez $t1, KEBranch0
+	jr $ra
+	KEBranch0:
+	
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	la $t0, Enemies
+	sll $t2, $a0, 3		# indice * 8
+	add $t0, $t0, $t2
+	sub $t3, $t1, $a0	# (inimigos vivos) - (indice)
+	
+	# Se o indice for do ultimo inimigo, nao reordena
+	beq $t3, 1, KEBranch1
+	
+	# Se o indice for de um inimigo do meio do array
+	# organiza o array para que nao haja espacos
+	# vazios entre os espacos reservados
+	KELoop:
+	addi $t3, $t3, -1
+	
+	# Carrega o inimigo seguinte em duas words de 4 bytes
+	lw $t4, 8($t0)
+	lw $t2, 12($t0)
+	
+	# Armazena as duas words na posicao atual
+	sw $t4, 0($t0)
+	sw $t2, 4($t0)
+	
+	# Pula para a posicao seguinte
+	addi $t0, $t0,  8
+	addi $a0, $a0, 1
+	
+	bnez $t3, KELoop
+	
+	KEBranch1:
+	
+	sb $zero, 0($t0)	# Reservado = 0
+	addi $t1, $t1, -1
+	sw $t1, AliveEnemies	# Decrementa inimigos vivos
+	jal EraseEnemy
+
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
