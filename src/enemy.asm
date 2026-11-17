@@ -22,8 +22,8 @@ Enemies: 	.space 80	# 8 bytes * 10 inimigos
 #	| sprite | vida inicial | velocidade | recompensa |
 .align 0
 EnemyType:
-	.byte 0, 50, 1, 5
-	.byte 1, 20, 4, 7
+	.byte 0, 30, 2, 5	# Zumbi comum
+	.byte 1, 50, 1, 7
 
 .align 2
 EnemySpriteType:
