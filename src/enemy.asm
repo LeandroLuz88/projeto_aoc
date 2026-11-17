@@ -17,13 +17,14 @@ MaxEnemies:	.word 10
 AliveEnemies:	.word 0
 EnemySize:	.word 8
 Enemies: 	.space 80	# 8 bytes * 10 inimigos
+EnemyCooldown:	.word 0		# Intervalo entre um salto e outro dos inimigos
 
 # Estrutura de tipos de inimigos
 #	| sprite | vida inicial | velocidade | recompensa |
 .align 0
 EnemyType:
-	.byte 0, 30, 2, 5	# Zumbi comum
-	.byte 1, 50, 1, 7
+	.byte 0, 30, 6, 5	# Zumbi comum
+	.byte 1, 50, 3, 8
 
 .align 2
 EnemySpriteType:
@@ -100,6 +101,16 @@ SpawnEnemy:
 # e, se necessario, suas posicoes alvo e renderiza o sprite no
 # mapa
 UpdateEnemies:
+	# Verifica se esta no tempo do inimigo dar um passo
+	lw $t0, EnemyCooldown
+	beqz $t0, CooldownCheckBranch
+	addi $t0, $t0, -1
+	sw $t0, EnemyCooldown
+	jr $ra
+	CooldownCheckBranch:
+	li $t0, 25	# Intervalo de cooldown
+	sw $t0, EnemyCooldown
+
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
