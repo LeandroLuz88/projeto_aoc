@@ -18,17 +18,8 @@ Map:	# 15x15 tiles
     .byte 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
-.align 2
-# Vetor de sprites do mapa
-MapSprite:
-	.word Grass	# 0
-	.word Dirt	# 1
-   
 # Vetor de posicoes target dos inimigos 
 # (Todos os valores são multiplicados por 16)
-.align 2
-PathSize: .word 11
-.align 0
 Path:
     .byte 176, 16   	 # (11, 1)
     .byte 176, 80   	 # (11, 5)
@@ -43,10 +34,11 @@ Path:
     .byte 224, 208	# (14, 13)
     .byte 225, 225	# Fim
 
-MapStart:	.word 3840	# Unidade de início do caminho relativa ao mapa (15 * 16 * 16)
-
-MapStartX: .word 0
-MapStartY: .word 16	# 1 * 16
+.align 2
+# Vetor de sprites do mapa
+MapSprite:
+	.word Grass	# 0
+	.word Dirt	# 1
 
     
 .text
