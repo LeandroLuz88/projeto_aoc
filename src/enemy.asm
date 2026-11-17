@@ -108,7 +108,7 @@ UpdateEnemies:
 	sw $t0, EnemyCooldown
 	jr $ra
 	CooldownCheckBranch:
-	li $t0, 25	# Intervalo de cooldown
+	li $t0, 15	# Intervalo de cooldown
 	sw $t0, EnemyCooldown
 
 	addi $sp, $sp, -4
@@ -129,20 +129,48 @@ UpdateEnemies:
 		lbu $t6, 0($s2)
 		beqz $t6, UEBranch
 		
-		# (Se vida = 0, liberar)
-		
-		lbu $s4, 5($s2)		# Carrega o tipo
-		sll $s4, $s4, 2		# tipo * 4 (tipo especifico)
-		add $s4, $s4, $s3
-		lbu $a2, 2($s4)		# Carrega velocidade
-
 		lbu $t8, 3($s2)		# Carrega ponto do caminho
 		sll $t8, $t8, 1		# ponto * 2
 		la $t5, Path
 		add $t8, $t8, $t5
 		lbu $s5, 0($t8)		# TargetX
 		lbu $s6, 1($t8)		# TargetY
-			
+		
+		# Verifica se chegou ao fim do caminho
+		li $t1, 225
+		bne $s5, $t1, UEBranch1
+		
+		move $a0, $s0
+		
+		addi $sp, $sp, -28
+		sw $s0, 0($sp)
+		sw $s1, 4($sp)
+		sw $s2, 8($sp)
+		sw $s3, 12($sp)
+		sw $s4, 16($sp)
+		sw $s5, 20($sp)
+		sw $s6, 24($sp)
+		
+		jal KillEnemy
+		
+		lw $s0, 0($sp)
+		lw $s1, 4($sp)
+		lw $s2, 8($sp)
+		lw $s3, 12($sp)
+		lw $s4, 16($sp)
+		lw $s5, 20($sp)
+		lw $s6, 24($sp)
+		addi $sp, $sp, 28
+		
+		lw $s1, AliveEnemies
+		j UELoop
+		
+		UEBranch1:
+		
+		lbu $s4, 5($s2)		# Carrega o tipo
+		sll $s4, $s4, 2		# tipo * 4 (tipo especifico)
+		add $s4, $s4, $s3
+		lbu $a2, 2($s4)		# Carrega velocidade
 		
 		# 1) Avanca inimigo na direcao X
 		lbu $a0, 1($s2)
@@ -375,54 +403,54 @@ KillEnemy:
 	jr $ra
 	KEBranch0:
 	
-	addi $sp, $sp, -4
+	# Apaga o sprite
+	addi $sp, $sp, -12
 	sw $ra, 0($sp)
+	sw $t1, 4($sp)
+	sw $a0, 8($sp)
+	jal EraseEnemy
+	lw $ra, 0($sp)
+	lw $t1, 4($sp)
+	lw $a0, 8($sp)
+	addi $sp, $sp, 12
 	
 	la $t0, Enemies
 	sll $t2, $a0, 3		# indice * 8
 	add $t0, $t0, $t2
-	sub $t3, $t1, $a0	# (inimigos vivos) - (indice)
+	sub $t3, $t1, $a0
+	addi $t3, $t3, -1	# (inimigos vivos) - (indice) - 1
 	
 	# Se o indice for do ultimo inimigo, nao reordena
-	beq $t3, 1, KEBranch1
+	beqz $t3, KEBranch1
 	
 	# Se o indice for de um inimigo do meio do array
 	# organiza o array para que nao haja espacos
 	# vazios entre os espacos reservados
 	KELoop:
-	addi $t3, $t3, -1
+		addi $t3, $t3, -1
 	
-	# Carrega o inimigo seguinte em duas words de 4 bytes
-	lw $t4, 8($t0)
-	lw $t2, 12($t0)
+		# Carrega o inimigo seguinte em duas words de 4 bytes
+		lw $t4, 8($t0)
+		lw $t2, 12($t0)
 	
-	# Armazena as duas words na posicao atual
-	sw $t4, 0($t0)
-	sw $t2, 4($t0)
+		# Armazena as duas words na posicao atual
+		sw $t4, 0($t0)
+		sw $t2, 4($t0)
 	
-	# Pula para a posicao seguinte
-	addi $t0, $t0,  8
-	addi $a0, $a0, 1
-	
+		# Pula para a posicao seguinte
+		addi $t0, $t0,  8
+		addi $a0, $a0, 1	
 	bnez $t3, KELoop
 	
 	KEBranch1:
 	
-	sb $zero, 0($t0)	# Reservado = 0
 	addi $t1, $t1, -1
 	sw $t1, AliveEnemies	# Decrementa inimigos vivos
-	jal EraseEnemy
-
-	lw $ra, 0($sp)
-	addi $sp, $sp, 4
+	
+	sb $zero, 0($t0)	# Reservado = 0
+	
 	
 	jr $ra
-	
-	
-	
-	
-	
-	
 	
 	
 	

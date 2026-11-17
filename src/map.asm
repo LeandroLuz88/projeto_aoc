@@ -41,6 +41,7 @@ Path:
     .byte 16, 80    	# (1, 5)
     .byte 16, 208	# (1, 13)
     .byte 224, 208	# (14, 13)
+    .byte 225, 225	# Fim
 
 MapStart:	.word 3840	# Unidade de início do caminho relativa ao mapa (15 * 16 * 16)
 
