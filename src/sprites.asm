@@ -53,6 +53,43 @@ Player:
     .byte 0, 0, 0, 0, 0, 8, 8, 0, 0, 8, 8, 0, 0, 0, 0, 0
     .byte 0, 0, 0, 0, 0, 4, 4, 0, 0, 4, 4, 0, 0, 0, 0, 0
     .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    
+# INIMIGOS
+
+EnemySprite0:		# Zumbi
+    .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 4, 4, 18, 18, 18, 0, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 4, 15, 15, 18, 18, 18, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 15, 15, 15, 15, 15, 15, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 15, 17, 15, 15, 17, 15, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 15, 15, 15, 15, 15, 15, 0, 0, 0, 0, 0
+    .byte 0, 0, 15, 7, 7, 7, 7, 16, 16, 7, 7, 7, 7, 7, 0, 0
+    .byte 0, 0, 15, 15, 7, 16, 7, 7, 7, 7, 7, 16, 15, 15, 0, 0
+    .byte 0, 0, 15, 15, 0, 7, 16, 7, 16, 16, 7, 0, 15, 15, 0, 0
+    .byte 0, 0, 0, 0, 0, 7, 16, 7, 7, 16, 7, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 19, 19, 19, 19, 19, 19, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 19, 19, 0, 0, 19, 19, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 19, 19, 0, 0, 19, 19, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 4, 4, 0, 0, 4, 4, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+EnemySprite1:		# Zumbi de armadura
+    .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 5, 5, 5, 5, 23, 23, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 6, 6, 6, 6, 5, 5, 5, 5, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 6, 15, 15, 6, 5, 15, 15, 5, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 6, 15, 17, 15, 15, 17, 15, 5, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 15, 15, 15, 15, 15, 15, 0, 0, 0, 0, 0
+    .byte 0, 0, 6, 5, 6, 6, 6, 5, 5, 5, 23, 23, 5, 23, 0, 0
+    .byte 0, 7, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 7, 0
+    .byte 0, 7, 7, 7, 6, 6, 6, 6, 5, 5, 5, 5, 7, 7, 7, 0
+    .byte 0, 7, 7, 0, 6, 6, 6, 6, 5, 5, 5, 5, 0, 7, 7, 0
+    .byte 0, 15, 15, 0, 0, 6, 7, 7, 7, 7, 5, 0, 0, 15, 15, 0
+    .byte 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 7, 7, 0, 0, 7, 7, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 21, 21, 0, 0, 21, 21, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 21, 21, 0, 0, 21, 21, 0, 0, 0, 0, 0
+    .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
    
 .align 2
 Colors:
@@ -71,6 +108,16 @@ Colors:
     .word 0x40A107
     .word 0x82431C
     .word 0x786969
+    .word 0x489A45
+    .word 0x3B7B39
+    .word 0xED3B3B
+    .word 0xCB9292
+    .word 0x430A9A
+    .word 0x898989
+    .word 0x212121
+    .word 0xADADAD
+    .word 0xFFFFFF
+   
 
 .text
 
@@ -196,7 +243,7 @@ DrawSpriteOnBackground:
 	
 	jr $ra
 	
-# Repinta o fundo nos pontos da posicao antiga de um sprite 8x8
+# Repinta o fundo nos pontos da posicao antiga de um sprite 16x16
 # que nao ficam dentro da posição nova (a parte que ficou descoberta).
 #	a0: x antigo   a1: y antigo   (em unidades)
 #	a2: x novo     a3: y novo     (em unidades)
@@ -231,9 +278,9 @@ RestoreBackground:
 
 			# O ponto esta dentro da posicao nova? O sprite vai cobri-lo: pula.
 			sub $t0, $s4, $s2
-			sltiu $t0, $t0, 8	# 1 se 0 <= x - xNovo < 8
+			sltiu $t0, $t0, 16	# 1 se 0 <= x - xNovo < 16
 			sub $t1, $s1, $s3
-			sltiu $t1, $t1, 8	# 1 se 0 <= y - yNovo < 8
+			sltiu $t1, $t1, 16	# 1 se 0 <= y - yNovo < 16
 			and $t0, $t0, $t1
 			bne $t0, $zero, RBNext
 			
