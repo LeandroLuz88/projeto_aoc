@@ -20,6 +20,7 @@ main:
 	
 		jal ReadInput
 		jal UpdatePlayer
+		jal UpdateTowers
 		jal RenderPlayer
 		jal UpdateEnemies
 		
@@ -45,5 +46,6 @@ Exit:
 .include "render.asm"
 .include "sprites.asm"
 .include "player.asm"
+.include "tower.asm"
 .include "enemy.asm"
 .include "map.asm"
