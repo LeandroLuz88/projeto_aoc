@@ -37,9 +37,13 @@ Path:
 .align 2
 # Vetor de sprites do mapa
 MapSprite:
-	.word Grass	# 0
-	.word Dirt	# 1
-
+	.word Grass		# 0
+	.word Dirt		# 1
+	.word Grass		# 2 (torre em construcao possui sprite de grama no fundo)
+	.word TowerSimple	# 3
+	.word TowerIce		# 4
+	.word TowerRifle	# 5
+	.word TowerCannon	# 6
     
 .text
 	

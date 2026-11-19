@@ -12,7 +12,8 @@
 .eqv MAX_TOWERS      32
 .eqv MAX_LEVEL       3
 .eqv BUILD_FRAMES    120 # contador de frames pra construcao
-.eqv TILE_TOWER      2 # indica a presenca de uma torre no mapa de tile
+.eqv TILE_TOWER      3 # indica a presenca de uma torre no mapa de tile
+.eqv TILE_BUILDING_TOWER 2 # indica um tile no qual uma torre esta em processo de construcao
 
 .eqv STATE_EMPTY     0
 .eqv STATE_BUILDING  1
@@ -202,8 +203,8 @@ TryBuildTower:
     # Se nao tem dinheiro, vai pro TryBuildTowerFail
     # Se tiver vai descontar aqui
 
-    # O tile agora esta ocupado por uma torre
-    li $t0, TILE_TOWER
+    # O tile agora esta ocupado por uma torre em construcao
+    li $t0, TILE_BUILDING_TOWER
     sb $t0, 0($s4)
 
     # Inicializa a torre em construcao
@@ -344,6 +345,13 @@ ActivateTower:
     sw $zero, T_COOLDOWN($s0) # pode atacar assim que ficar pronta
     li $t0, STATE_ACTIVE
     sw $t0, T_STATE($s0)
+    
+    lw $a0, T_TILEX($s0)
+    lw $a1, T_TILEY($s0)
+    jal MapTileAddress
+    lw $t0, T_TYPE($s0)
+    addi $t0, $t0, TILE_TOWER # (tipo da torre) + TILE_TOWER
+    sb $t0, 0($v0) # o tile passa a ser ocupado pela torre especifica
 
     move $a0, $s0
     jal DrawTower
