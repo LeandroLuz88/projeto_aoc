@@ -142,7 +142,8 @@ BackgroundColor:
 	la $t3, Map
 	add $t2, $t2, $t3	# endereco do indice do sprite de fundo
 	lbu $t2, 0($t2)		# indice do sprite (0 = Grass, 1 = Dirt)
-	
+	move $t5, $t2
+
 	# busca endereco do sprite do fundo do tile do ponto
 	sll $t2, $t2,  2
 	la $t3, MapSprite
@@ -155,7 +156,15 @@ BackgroundColor:
 	add $t0, $t0, $t1	# indice do ponto no sprite
 	add $t0, $t0, $t2
 	lbu $t0, 0($t0)		# indice da cor
+
+	# Mostra a grama em baixo da parte transparente de torres
+    bne $t0, $zero, BackgroundHasColor
+    ble $t5, 1, BackgroundHasColor  # grama ou terra
+    la $t2, Grass
+    add $t0, $t6, $t2
+    lbu $t0, 0($t0)
 	
+BackgroundHasColor:
 	sll $t0, $t0, 2		# indice * 4
 	la $t1, Colors
 	add $t0, $t0, $t1
