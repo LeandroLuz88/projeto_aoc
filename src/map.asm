@@ -21,11 +21,12 @@ Map:	# 15x15 tiles
 # Vetor de posicoes target dos inimigos 
 # (Todos os valores são multiplicados por 16)
 Path:
-    .byte 176, 16   	 # (11, 1)
-    .byte 176, 80   	 # (11, 5)
-    .byte 128, 80   	 # (8, 5)
-    .byte 128, 128  	 # (8, 8)
-    .byte 192, 128 	 # (12, 8)
+    .byte 0, 16	        # (0, 1)
+    .byte 176, 16   	# (11, 1)
+    .byte 176, 80   	# (11, 5)
+    .byte 128, 80   	# (8, 5)
+    .byte 128, 128  	# (8, 8)
+    .byte 192, 128 	# (12, 8)
     .byte 192, 160  	# (12, 10)
     .byte 64, 160    	# (4, 10)
     .byte 64, 80     	# (4, 5)

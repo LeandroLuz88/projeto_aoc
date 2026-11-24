@@ -1,51 +1,70 @@
+# Struct Enemy:
+# Estrutura de uma posicao no array "Enemies".
+# Cada elemento possui ENEMY_SIZE bytes e
+# cada byte representa um atributo variavel
+# de um inimigo.
+.eqv ENEMY_SIZE		8	# Tamanho de cada inimigo no array "Enemies". Recomendado ser multiplo de 4.
+.eqv E_RESERVED	0
+.eqv E_X	1
+.eqv E_Y	2
+.eqv E_PATH	3
+.eqv E_HP	4
+.eqv E_TYPE	5
+.eqv E_SLOWTIME	6
+
+.eqv MAX_ENEMIES	10
+.eqv ENEMY_BYTES	80	# ENEMY_SIZE * MAX_ENEMIES
+
+# Struct EnemyType:
+# Armazena atributos constantes de cada tipo
+# de inimigo.
+.eqv ENEMY_TYPE_SIZE	4	# Tamanho de cada posicao no array "EnemyType"
+.eqv ET_SPRITE	0	# indice do array EnemySpriteType
+.eqv ET_INIT_HP	1	# vida inicial
+.eqv ET_VEL	2	# numero de unidades que ele anda a cada salto
+.eqv ET_COINS	3	# recompensa por matar o inimigo
+
+
+
+
 .data
 
-# Inimigo:
-#	Reservado [0, 1]	(0)
-#	EnemyX [0, 224]		(1)
-#	EnemyY [0, 224]		(2)
-#	Path [0, 255]		(3)
-#	HP [0, 255]		(4)
-#	Type [0, 3]		(5)
-#	SlowTime [0, 255]	(6)
-#	EXTRA
-# Tamanho de um inimigo: 8 bytes
-# Possiveis atributos adicionais:
+Enemies: 	.space ENEMY_BYTES	# Array de inimigos
+AliveEnemies:	.word 0			# Inimigos vivos
+EnemyCooldown:	.word 0			# Intervalo entre um salto e outro dos inimigos
 
-
-MaxEnemies:	.word 10
-AliveEnemies:	.word 0
-EnemySize:	.word 8
-Enemies: 	.space 80	# 8 bytes * 10 inimigos
-EnemyCooldown:	.word 0		# Intervalo entre um salto e outro dos inimigos
-
-# Estrutura de tipos de inimigos
-#	| sprite | vida inicial | velocidade | recompensa |
+# Array de tipos de inimigos
 .align 0
 EnemyType:
 	.byte 0, 30, 6, 5	# Zumbi comum
-	.byte 1, 50, 3, 8
+	.byte 1, 50, 3, 8	# Zumbi com armadura
 
+# Array de sprites de inimigos
 .align 2
 EnemySpriteType:
 	.word EnemySprite0
 	.word EnemySprite1
 
 
+
+
 .text
+
+# Funcoes que utilizam registradores do tipo s:
+#	- UpdateEnemies
+#	- EraseAllEnemies
+#	- EraseEnemy
 
 # Inicializa o vetor de inimigos
 InitEnemies:
 	li $t0, 0
-	lw $t1, MaxEnemies
-	la $t2, Enemies
-	lw $t3, EnemySize
+	la $t1, Enemies
 	
 	IELoop:
-	beq $t0, $t1, IELoopExit
+	beq $t0, MAX_ENEMIES, IELoopExit
 		# Define a posição como não reservada
-		sw $zero, 0($t2)
-		addu $t2, $t2, $t3
+		sb $zero, E_RESERVED($t1)
+		addu $t1, $t1, ENEMY_SIZE
 	addi $t0, $t0, 1
 	j IELoop
 	IELoopExit:
@@ -61,37 +80,37 @@ SpawnEnemy:
 	li $t0, 0
 	lw $t1, AliveEnemies
 	la $t2, Enemies
-	lw $t5, MaxEnemies
 	
 	# Se o vetor de inimigo estiver lotado, encerra
-	slt $t5, $t1, $t5
-	bnez $t5, SEBranch1
+	li $t3, MAX_ENEMIES
+	slt $t3, $t1, $t3
+	bnez $t3, SEBranch1
 	li $v0, 0	# Falha: inimigo nao spawnado
 	jr $ra
 	
 	SEBranch1:
 	
-	sll $t3, $t1, 3
+	mul $t3, $t1, ENEMY_SIZE
 	add $t2, $t2, $t3
 	addi $t1, $t1, 1
 	sw $t1, AliveEnemies
 	la $t3, EnemyType
-	sll $t4, $a0, 2
+	mul $t4, $a0, ENEMY_TYPE_SIZE
 	add $t3, $t3, $t4
-		
+	
 	# Carrega os atributos do inimigo na posicao encontrada
 	li $t4, 1
-	sb $t4, 0($t2)		# Reservado = 1
+	sb $t4, E_RESERVED($t2)		# Reservado = 1
+	lbu $t4, Path
+	sb $t4, E_X($t2)
+	lbu $t4, Path+1
+	sb $t4, E_Y($t2)
 	li $t4, 0
-	sb $t4, 1($t2)		# X
-	li $t4, 16
-	sb $t4, 2($t2)		# Y
-	li $t4, 0
-	sb $t4, 3($t2) 		# Path
-	lbu $t4, 1($t3)
-	sb $t4, 4($t2)		# HP
-	sb $a0, 5($t2)		# Type
-	sb $zero, 6($t2)	# SlowTime
+	sb $t4, E_PATH($t2)
+	lbu $t4, ET_INIT_HP($t3)
+	sb $t4, E_HP($t2)
+	sb $a0, E_TYPE($t2)
+	sb $zero, E_SLOWTIME($t2)
 
 	li $v0, 1	# Sucesso: inimigo spawnado
 	jr $ra
@@ -129,7 +148,7 @@ UpdateEnemies:
 		lbu $t6, 0($s2)
 		beqz $t6, UEBranch
 		
-		lbu $t8, 3($s2)		# Carrega ponto do caminho
+		lbu $t8, E_PATH($s2)		# Carrega ponto do caminho
 		sll $t8, $t8, 1		# ponto * 2
 		la $t5, Path
 		add $t8, $t8, $t5
@@ -167,30 +186,30 @@ UpdateEnemies:
 		
 		UEBranch1:
 		
-		lbu $s4, 5($s2)		# Carrega o tipo
-		sll $s4, $s4, 2		# tipo * 4 (tipo especifico)
+		lbu $s4, E_TYPE($s2)		# Carrega o tipo
+		mul $s4, $s4, ENEMY_TYPE_SIZE	# tipo especifico
 		add $s4, $s4, $s3
-		lbu $a2, 2($s4)		# Carrega velocidade
+		lbu $a2, ET_VEL($s4)		# Carrega velocidade
 		
 		# 1) Avanca inimigo na direcao X
-		lbu $a0, 1($s2)
+		lbu $a0, E_X($s2)
 		move $a1, $s5
 		jal StepToward
-		sb $v0, 1($s2)
+		sb $v0, E_X($s2)
 		
 		# 2) Avanca inimigo na direcao Y
-		lbu $a0, 2($s2)
+		lbu $a0, E_Y($s2)
 		move $a1, $s6
 		jal StepToward
-		sb $v0, 2($s2)
+		sb $v0, E_Y($s2)
 			
 		# 3) Renderiza o inimigo
-		lbu $a0, 1($s2)
-		lbu $a1, 2($s2)
+		lbu $a0, E_X($s2)
+		lbu $a1, E_Y($s2)
 		jal GetUnitAddress
 		move $a1, $v0
 		
-		lbu $t6, 0($s4)		# Carrega indice de sprite
+		lbu $t6, ET_SPRITE($s4)		# Carrega indice de sprite
 		sll $t6, $t6, 2
 		la $t7, EnemySpriteType
 		add $t6, $t6, $t7
@@ -201,19 +220,19 @@ UpdateEnemies:
 		jal DrawSprite
 		
 		# 4) Se chegou ao destino, muda o destino
-		lbu $t8, 1($s2)		# X
-		lbu $t9, 2($s2)		# Y
+		lbu $t8, E_X($s2)
+		lbu $t9, E_Y($s2)
 		
 		bne $t8, $s5, UEBranch	# Pule se X != TargetX
 		bne $t9, $s6, UEBranch	# Pule se Y != TergetY
 		
 		# Incrementa o path do inimigo
-		lbu $t6, 3($s2)
+		lbu $t6, E_PATH($s2)
 		addi $t6, $t6, 1
-		sb $t6, 3($s2)
+		sb $t6, E_PATH($s2)
 		
 		UEBranch:
-		addi $s2, $s2, 8 	# Endereco atual no vetor + EnemySize
+		addi $s2, $s2, ENEMY_SIZE	# Endereco atual no vetor + EnemySize
 	addi $s0, $s0, 1
 	j UELoop
 	UELoopExit:
@@ -239,18 +258,12 @@ EraseAllEnemies:
 	EAELoop:
 	beq $s0, $s1, EAELoopExit
 		# Se a posicao estiver vazia, pule
-		lbu $t0, 0($s2)
+		lbu $t0, E_RESERVED($s2)
 		beqz $t0, EAEBranch0
 		
-		# Se indice de reservado for 2, mude para 0
-		bne $t0, 2, EAEBranch3
-		sb $zero, 0($s2)
-		j EAELoopExit
-		EAEBranch3:
-		
 		# identifica tiles
-		lbu $s3, 1($s2)		# X
-		lbu $s4, 2($s2)		# Y
+		lbu $s3, E_X($s2)		# X
+		lbu $s4, E_Y($s2)		# Y
 		addi $a0, $s3, 15	# X da ponta superior direita
 		addi $a1, $s4, 15	# Y da ponta inferior esquerda
 		andi $s3, $s3, 0xFFF0	# trunca X para o maior multiplo de 16
@@ -307,7 +320,7 @@ EraseAllEnemies:
 		jal DrawSprite
 
 		EAEBranch0:
-		addi $s2, $s2, 8
+		addi $s2, $s2, ENEMY_SIZE
 	addi $s0, $s0, 1
 	j EAELoop
 	EAELoopExit:
@@ -326,12 +339,12 @@ EraseEnemy:
 	sw $ra, 0($sp)
 	
 	la $s2, Enemies
-	sll $t0, $a0, 3
+	mul $t0, $a0, ENEMY_SIZE
 	add $s2, $s2, $t0
 	
 	# identifica tiles
-	lbu $s3, 1($s2)		# X
-	lbu $s4, 2($s2)		# Y
+	lbu $s3, E_X($s2)
+	lbu $s4, E_Y($s2)
 	addi $a0, $s3, 15	# X da ponta superior direita
 	addi $a1, $s4, 15	# Y da ponta inferior esquerda
 	andi $s3, $s3, 0xFFF0	# trunca X para o maior multiplo de 16
@@ -395,6 +408,7 @@ EraseEnemy:
 
 # Mata um determinado inimigo e organiza o array de inimigos
 #	- a0: indice do inimigo
+# OBS: Essa funcao necessita que ENEMY_SIZE seja 8
 KillEnemy:	
 	lw $t1, AliveEnemies
 	
@@ -415,7 +429,7 @@ KillEnemy:
 	addi $sp, $sp, 12
 	
 	la $t0, Enemies
-	sll $t2, $a0, 3		# indice * 8
+	mul $t2, $a0, ENEMY_SIZE
 	add $t0, $t0, $t2
 	sub $t3, $t1, $a0
 	addi $t3, $t3, -1	# (inimigos vivos) - (indice) - 1
@@ -429,16 +443,18 @@ KillEnemy:
 	KELoop:
 		addi $t3, $t3, -1
 	
+		# As seguintes operacoes necessitam que ENEMY_SIZE seja 8
+	
 		# Carrega o inimigo seguinte em duas words de 4 bytes
 		lw $t4, 8($t0)
 		lw $t2, 12($t0)
-	
+		
 		# Armazena as duas words na posicao atual
 		sw $t4, 0($t0)
 		sw $t2, 4($t0)
 	
 		# Pula para a posicao seguinte
-		addi $t0, $t0,  8
+		addi $t0, $t0, 8
 		addi $a0, $a0, 1	
 	bnez $t3, KELoop
 	
@@ -447,13 +463,7 @@ KillEnemy:
 	addi $t1, $t1, -1
 	sw $t1, AliveEnemies	# Decrementa inimigos vivos
 	
-	sb $zero, 0($t0)	# Reservado = 0
+	sb $zero, E_RESERVED($t0)	# Reservado = 0
 	
 	
 	jr $ra
-	
-	
-	
-	
-	
-	
