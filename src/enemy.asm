@@ -30,6 +30,7 @@ AliveEnemies:	.word 0
 EnemySize:	.word 8
 Enemies: 	.space 80	# 8 bytes * 10 inimigos
 EnemyCooldown:	.word 0		# Intervalo entre um salto e outro dos inimigos
+EnemyNextID:	.word 1		# Prox ID livre (1...255), sem ID 0 (sem alvo identificado)
 
 # Estrutura de tipos de inimigos
 #	| sprite | vida inicial | velocidade | recompensa |
@@ -104,6 +105,16 @@ SpawnEnemy:
 	sb $t4, 4($t2)		# HP
 	sb $a0, 5($t2)		# Type
 	sb $zero, 6($t2)	# SlowTime
+	lw $t4, EnemyNextID
+	sb $t4, EnemyID($t2) # ID
+
+	addi $t4, $t4, 1
+	andi $t4, $t4, 0xFF
+	bnez $t4, NewID
+	li $t4, 1
+
+	NewID:
+	sw $t4, EnemyNextID
 
 	li $v0, 1	# Sucesso: inimigo spawnado
 	jr $ra
