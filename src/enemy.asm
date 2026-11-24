@@ -1,3 +1,14 @@
+# Struct dos inimigos (8 bytes)
+.eqv ENEMY_SIZE 8
+.eqv Reservado 0
+.eqv EnemyX 1
+.eqv EnemyY 2
+.eqv Path 3
+.eqv HP 4
+.eqv Type 5
+.eqv SlowTime 6
+.eqv EnemyID 7
+
 .data
 
 # Inimigo:
@@ -8,7 +19,8 @@
 #	HP [0, 255]		(4)
 #	Type [0, 3]		(5)
 #	SlowTime [0, 255]	(6)
-#	EXTRA
+#	EnemyID [0, 255]	(7)
+#	
 # Tamanho de um inimigo: 8 bytes
 # Possiveis atributos adicionais:
 
