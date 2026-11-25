@@ -5,20 +5,21 @@
 #	- Display Height:	512
 #	- Base address:		0x100040000 (heap)
 
-# Funções:
-#	- PaintBackground
-#	- DrawMap
+.eqv BITMAP_BASE	0x10040000	# Endereço base do bitmap
+.eqv BITMAP_END		0x100C0000	# Endereço final do bitmap: BITMAP_BASE + [4 * (1024/2) * (512/2)]
+.eqv MAP_BASE		0x10044220	# Endereço da unidade superior esquerda
+
+
+
 
 .data
-
-MapBase: .word 0x10044040	# Endereço base do mapa
 
 .text
 
 # Pinta todo o bitmap de uma cor
 PaintBackground:
-	li $t0, 0x10040000	# Endereço base do bitmap
-	addi $t1, $t0, 524288	# Endereço final
+	li $t0, BITMAP_BASE
+	li $t1, BITMAP_END
 	li $t2, 0x333344	# Cor
 	
 	PaintBackgroundLoop:
@@ -35,7 +36,7 @@ DrawMap:
 	li $t0, 0		# índice i
 	li $t1, 0		# indice j
 	li $t2, 15 		# 15x15 tiles
-	li $t3, 0x10044040	# Endereço base do mapa (Endereço base + 251936960)
+	li $t3, MAP_BASE	# Endereço base do mapa (Endereço base + 251936960)
 	la $t4, Map		# Matriz de mapa
 	
 	# Argumentos da função DrawSprite constantes
@@ -106,7 +107,7 @@ GetTileAddress:
 	sll $a0, $a0, 6		# x * 16 * 4 = 2^6
 	sll $a1, $a1, 14	# y * 512 * 8 * 4 = y * 2^14
 	
-	li $v0, 0x10044040	# Endereco base do mapa
+	li $v0, MAP_BASE	# Endereco base do mapa
 	add $v0, $v0, $a0
 	add $v0, $v0, $a1
 	
@@ -121,7 +122,7 @@ GetUnitAddress:
 	sll $a0, $a0, 2		# x * 4 bytes = 2^2
 	sll $a1, $a1, 11	# y * 512 * 4 = y * 2^11
 	
-	li $v0, 0x10044040	# Endereco base do mapa
+	li $v0, MAP_BASE	# Endereco base do mapa
 	add $v0, $v0, $a0
 	add $v0, $v0, $a1
 	
