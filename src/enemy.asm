@@ -475,8 +475,38 @@ KillEnemy:
 	
 	jr $ra
 	
+# Tira HP do inimigo. Se HP == 0, mata o inimigo
+#	- a0: indice do inimigo
+#	- a1: dano
+#	- v0: 0 se sobreviveu, 1 se morreu
+DamageEnemy:
+	la $t0, Enemies
+	sll $t1, $a0, 3
+	add $t0, $t1, $t0 # inimigo especifico no vetor
+	lbu $t2, HP($t0)
+	sub $t2, $t2, $a1
+	bgtz $t2, EnemyAlive
+
+	# Caso o inimigo Morra
+	# KillEnemy -> EraseEnemy
+	# (como Erase escreve em s2 -- s4, temos que salvar
+	addi $sp, $sp, -16
+	sw $ra, 0($sp)
+	sw $s2, 4($sp)
+	sw $s3, 8($sp)
+	sw $s4, 12($sp)
+	jal KillEnemy
+	lw $ra, 0,($sp)
+	lw $s2, 4,($sp)
+	lw $s3, 8,($sp)
+	lw $s4, 12,($sp)
+	addi $sp, $sp, 16
 	
-	
-	
-	
-	
+	li $v0, 1
+	jr $ra
+
+
+	EnemyAlive
+	lw $t2, HP($t0)
+	li $v0, 0
+	jr $ra
