@@ -28,41 +28,41 @@
 Font:
     # Letras maiusculas (A-Z)
     .byte 14,17,17,31,17,17,17,17    # A
-    .byte 30,17,17,30,17,17,30,0     # B
-    .byte 14,17,16,16,16,17,14,0     # C
-    .byte 30,17,17,17,17,17,30,0     # D
-    .byte 31,16,16,30,16,16,31,0     # E
-    .byte 31,16,16,30,16,16,16,0     # F
-    .byte 14,17,16,23,17,17,15,0     # G
+    .byte 30,17,17,30,17,17,17,30     # B
+    .byte 14,17,16,16,16,16,17,14    # C
+    .byte 30,17,17,17,17,17,17,30     # D
+    .byte 31,16,16,30,16,16,16,31     # E
+    .byte 31,16,16,30,16,16,16,16     # F
+    .byte 14,17,16,23,17,17,17,15    # G
     .byte 17,17,17,31,17,17,17,17   # H
-    .byte 31,4,4,4,4,4,31,0          # I
-    .byte 7,2,2,2,18,18,12,0         # J
+    .byte 31,4,4,4,4,4,4,31          # I
+    .byte 7,2,2,2,18,18,18,12         # J
     .byte 17,18,20,24,20,18,17,17   # K
-    .byte 16,16,16,16,16,16,31,0     # L
+    .byte 16,16,16,16,16,16,16,31     # L
     .byte 17,27,21,21,17,17,17,17   # M
     .byte 17,25,21,19,17,17,17,17   # N
-    .byte 14,17,17,17,17,17,14,0     # O
+    .byte 14,17,17,17,17,17,17,14     # O
     .byte 30,17,17,30,16,16,16,16   # P
     .byte 14,17,17,17,21,18,13,1     # Q
     .byte 30,17,17,30,20,18,17,17   # R
-    .byte 15,16,16,14,1,1,30,0       # S
+    .byte 15,16,16,14,1,1,1,30      # S
     .byte 31,4,4,4,4,4,4,4           # T
-    .byte 17,17,17,17,17,17,14,0     # U
+    .byte 17,17,17,17,17,17,17,14     # U
     .byte 17,17,17,17,17,10,4,4      # V
     .byte 17,17,17,21,21,21,10,10   # W
     .byte 17,17,10,4,10,17,17,17    # X
     .byte 17,17,10,4,4,4,4,4         # Y
-    .byte 31,1,2,4,8,16,31,0         # Z
+    .byte 31,1,2,4,8,16,16,31         # Z
 
     # Numeros (0-9)
     .byte 14,17,19,21,25,17,14,0     # 0
     .byte 4,12,4,4,4,4,14,0          # 1
     .byte 14,17,1,2,4,8,31,0         # 2
     .byte 30,1,1,14,1,1,30,0         # 3
-    .byte 2,6,10,18,31,2,2,2         # 4
+    .byte 2,6,10,18,31,2,2,0         # 4
     .byte 31,16,16,30,1,1,30,0       # 5
     .byte 14,16,16,30,17,17,14,0     # 6
-    .byte 31,1,2,4,8,8,8,8           # 7
+    .byte 31,1,2,4,8,8,8,0           # 7
     .byte 14,17,17,14,17,17,14,0     # 8
     .byte 14,17,17,15,1,1,14,0       # 9
 
@@ -248,7 +248,7 @@ BackgroundHasColor:
 #	a1: Posicao y em unidades do bitmap
 #	a2: Largura
 #	a3: Altura
-#	t0: cor (RRGGBB)
+#	t0: cor (0xRRGGBB)
 DrawRectangle:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
@@ -286,10 +286,10 @@ DrawRectangle:
 	
 
 # Desenha um caractere no bitmap
-#	a0: posicao x em unidades do bitmap
-#	a1: posicao y em unidades do bitmap
-#	a2: codigo ascii. Apenas letras MAIUSCULAS ou numeros
-#	a3: cor
+#	a0: Posicao x em unidades do bitmap
+#	a1: Posicao y em unidades do bitmap
+#	a2: Codigo ascii. Apenas letras MAIUSCULAS ou numeros
+#	a3: Cor (0xRRGGBB)
 DrawChar:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
@@ -366,6 +366,50 @@ DrawChar:
 	addi $sp, $sp, 4
 	jr $ra
 
+
+# Desenha um texto no bitmap de acordo com uma string
+#	a0: Posicao x em unidades do bitmap
+#	a1: Posicao y em unidades do bitmap
+#	a2: Endereco da string
+#	a3: Cor (0xRRGGBB)
+DrawText:
+	addi $sp, $sp -4
+	sw $ra, 0($sp)
+	
+	move $t0, $a0
+	move $t1, $a1
+	move $t2, $a2
+	
+	DTLoop:
+		lbu $a2, 0($t2)
+		beqz $a2, DTLoopEnd	# = '\0'
+		beq $a2, 32, DTJump	# Caractere de espaco
+		
+		move $a0, $t0
+		move $a1, $t1
+		
+		addi $sp, $sp, -12
+		sw $t0, 0($sp)
+		sw $t1, 4($sp)
+		sw $t2, 8($sp)
+		
+		jal DrawChar
+		
+		lw $t0, 0($sp)
+		lw $t1, 4($sp)
+		lw $t2, 8($sp)
+		addi $sp, $sp, 12
+		
+		DTJump:
+		
+		addi $t0, $t0, 6	# CHAT_WIDTH + 1
+		addi $t2, $t2, 1	
+	j DTLoop
+	DTLoopEnd:
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
 
 # Funcao que inicializa elementos como
 # interface, mapa e jogador.
