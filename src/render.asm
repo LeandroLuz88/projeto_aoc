@@ -19,6 +19,14 @@
 .eqv CHAR_WIDTH		5
 .eqv CHAR_HEIGHT	8
 
+# Posicao do display de vida
+.eqv LIFE_DISPLAY_X	405
+.eqv LIFE_DISPLAY_Y	14
+
+# Posicao do display de moedas
+.eqv COINS_DISPLAY_X	405
+.eqv COINS_DISPLAY_Y	30
+
 
 .data
 
@@ -453,7 +461,7 @@ InitGameLayout:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
-	# Desenha os retangulos
+	# 1) Quadro das torres
 	
 	li $a0, 8
 	li $a1, 8
@@ -462,28 +470,7 @@ InitGameLayout:
 	li $t0, BOX_COLOR
 	jal DrawRectangle
 	
-	li $a0, 8
-	li $a1, 136
-	li $a2, 120
-	li $a3, 112
-	li $t0, BOX_COLOR
-	jal DrawRectangle
-	
-	li $a0, 384
-	li $a1, 8
-	li $a2, 120
-	li $a3, 112
-	li $t0, BOX_COLOR
-	jal DrawRectangle
-	
-	li $a0, 384
-	li $a1, 136
-	li $a2, 120
-	li $a3, 112
-	li $t0, BOX_COLOR
-	jal DrawRectangle
-	
-	# Desenha os textos
+	# 1.1) Desenha os textos
 	
 	li $a0, 12
 	li $a1, 12
@@ -515,7 +502,7 @@ InitGameLayout:
 	li $a3, 0xFFFFFF
 	jal DrawText
 	
-	# Desenha as torres
+	# 1.2) Desenha torres
 	
 	li $a0, 12
 	li $a1, 24
@@ -580,6 +567,57 @@ InitGameLayout:
 	li $a2, 16
 	li $a3, 16
 	jal DrawSprite
+	
+	# 2) Quadro da torre selecionada
+	
+	li $a0, 8
+	li $a1, 136
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	# 3) Quadro das informacoes da partida
+	
+	li $a0, 384
+	li $a1, 8
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	# Desenha coracao
+	li $a0, 388
+	li $a1, 12
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, Heart
+	li $a2, 12
+	li $a3, 13
+	jal DrawSprite
+	
+	# Desenha moeda
+	li $a0, 388
+	li $a1, 28
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, Coin
+	li $a2, 13
+	li $a3, 13
+	jal DrawSprite
+	
+	# 4) Quadro de atributos da arma do jogador
+	
+	li $a0, 384
+	li $a1, 136
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	
+	
+	
 	
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
