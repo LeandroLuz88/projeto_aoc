@@ -6,6 +6,7 @@
 main:
 	jal InitGame
 	jal InitEnemies
+	jal InitGameLayout
 	
 	GameLoop:
 		jal ReadInput

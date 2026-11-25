@@ -12,6 +12,8 @@
 .eqv Y_JUMP	2048	# Valor necessario para deslocar uma unidade para baixo
 .eqv Y_SHIFT	11	# log_2 (Y_JUMP)
 
+.eqv BACKGROUND_COLOR	0x333344
+.eqv BOX_COLOR		0x57576c
 
 
 .data
@@ -22,7 +24,7 @@
 PaintBackground:
 	li $t0, BITMAP_BASE
 	li $t1, BITMAP_END
-	li $t2, 0x333344	# Cor
+	li $t2, BACKGROUND_COLOR	# Cor
 	
 	PaintBackgroundLoop:
 		beq $t0, $t1, EndPaintBackgroundLoop
@@ -253,3 +255,41 @@ InitGame:
 	
 	jr $ra
 
+
+# Inicializa elementos visuais do layout de jogo
+InitGameLayout:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	li $a0, 8
+	li $a1, 8
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	li $a0, 8
+	li $a1, 136
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	li $a0, 384
+	li $a1, 8
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	li $a0, 384
+	li $a1, 136
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
