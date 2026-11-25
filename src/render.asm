@@ -15,8 +15,59 @@
 .eqv BACKGROUND_COLOR	0x333344
 .eqv BOX_COLOR		0x57576c
 
+# Medidas da fonte de caracteres
+.eqv CHAR_WIDTH		5
+.eqv CHAR_HEIGHT	8
+
 
 .data
+
+# Fonte de caracteres, de A a Z e 0 a 9.
+# Cada byte é uma linha e cada bit do byte 
+# representa um ponto a ser pintado
+Font:
+    # Letras maiusculas (A-Z)
+    .byte 14,17,17,31,17,17,17,17    # A
+    .byte 30,17,17,30,17,17,30,0     # B
+    .byte 14,17,16,16,16,17,14,0     # C
+    .byte 30,17,17,17,17,17,30,0     # D
+    .byte 31,16,16,30,16,16,31,0     # E
+    .byte 31,16,16,30,16,16,16,0     # F
+    .byte 14,17,16,23,17,17,15,0     # G
+    .byte 17,17,17,31,17,17,17,17   # H
+    .byte 31,4,4,4,4,4,31,0          # I
+    .byte 7,2,2,2,18,18,12,0         # J
+    .byte 17,18,20,24,20,18,17,17   # K
+    .byte 16,16,16,16,16,16,31,0     # L
+    .byte 17,27,21,21,17,17,17,17   # M
+    .byte 17,25,21,19,17,17,17,17   # N
+    .byte 14,17,17,17,17,17,14,0     # O
+    .byte 30,17,17,30,16,16,16,16   # P
+    .byte 14,17,17,17,21,18,13,1     # Q
+    .byte 30,17,17,30,20,18,17,17   # R
+    .byte 15,16,16,14,1,1,30,0       # S
+    .byte 31,4,4,4,4,4,4,4           # T
+    .byte 17,17,17,17,17,17,14,0     # U
+    .byte 17,17,17,17,17,10,4,4      # V
+    .byte 17,17,17,21,21,21,10,10   # W
+    .byte 17,17,10,4,10,17,17,17    # X
+    .byte 17,17,10,4,4,4,4,4         # Y
+    .byte 31,1,2,4,8,16,31,0         # Z
+
+    # Numeros (0-9)
+    .byte 14,17,19,21,25,17,14,0     # 0
+    .byte 4,12,4,4,4,4,14,0          # 1
+    .byte 14,17,1,2,4,8,31,0         # 2
+    .byte 30,1,1,14,1,1,30,0         # 3
+    .byte 2,6,10,18,31,2,2,2         # 4
+    .byte 31,16,16,30,1,1,30,0       # 5
+    .byte 14,16,16,30,17,17,14,0     # 6
+    .byte 31,1,2,4,8,8,8,8           # 7
+    .byte 14,17,17,14,17,17,14,0     # 8
+    .byte 14,17,17,15,1,1,14,0       # 9
+
+
+
 
 .text
 
@@ -232,6 +283,89 @@ DrawRectangle:
 	addi $sp, $sp, 4
 
 	jr $ra
+	
+
+# Desenha um caractere no bitmap
+#	a0: posicao x em unidades do bitmap
+#	a1: posicao y em unidades do bitmap
+#	a2: codigo ascii. Apenas letras MAIUSCULAS ou numeros
+#	a3: cor
+DrawChar:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+
+	# 1) Checando se o char é uma letra, um numero ou invalido
+
+	li $t0, 65
+	slt $t0, $a2, $t0	# < 'A'
+	bnez $t0, CharIsNumber
+	
+	li $t0, 90
+	slt $t0, $t0, $a2	# > 'Z'
+	bnez $t0, DCExit
+	
+	# Indice do array Font como letra
+	addi $t0, $a2, -65
+	
+	j DCBranch
+	
+	CharIsNumber:
+	li $t0, 48
+	slt $t0, $a2, $t0	# < '0'
+	bnez $t0, DCExit
+	
+	li $t0, 57
+	slt $t0, $t0, $a2	# > '9'
+	bnez $t0, DCExit
+	
+	# Indice do array Font como numero
+	addi $t0, $a2, -22	# -48 + 26
+	
+	
+	# 2) Desenha o char no bitmap se for valido
+	
+	DCBranch:
+
+	# Ajusta o array Font para o indice
+	sll $t0, $t0, 3		# CHAR_HEIGHT = 8 = 2^3
+	la $t1, Font
+	add $t0, $t1, $t0	# Posicao que armazena os bytes do caractere
+	
+	jal GetBitmapUnitAddress	# Os atributos ja estao nos registradores
+	move $t1, $v0		# Posicao no bitmap
+	
+	move $t2, $zero
+	DCRow:
+	beq $t2, CHAR_HEIGHT, DCRowEnd
+		li $t4, 16	# 2^(CHAR_WIDTH) = 2^5
+		lbu $t5, 0($t0)	# Byte da linha
+		move $t3, $zero
+		DCCol:
+		beq $t3, CHAR_WIDTH, DCColEnd
+			#Verifica se determinado bit do byte da linha eh 1 (pinta) ou 0 (nao pinta)
+			and $t6, $t4, $t5
+			beqz $t6, DCColBranch
+			
+			sw $a3, 0($t1)	# Pinta
+			
+			DCColBranch:
+			
+			srl $t4, $t4, 1		# Proximo bit
+			addi $t1, $t1, 4	# Proxima posicao
+		addi $t3, $t3, 1	# Proxima coluna
+		j DCCol
+		DCColEnd:
+		addi $t0, $t0, 1
+		addi $t1, $t1, 2028		# 4 * (512 - CHAR_WIDTH) = 4 * (512 - 5)
+	addi $t2, $t2, 1	# Proxima linha
+	j DCRow
+	DCRowEnd:
+	
+	DCExit:
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
 
 # Funcao que inicializa elementos como
 # interface, mapa e jogador.
