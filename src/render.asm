@@ -9,6 +9,8 @@
 .eqv BITMAP_END		0x100C0000	# Endereço final do bitmap: BITMAP_BASE + [4 * (1024/2) * (512/2)]
 .eqv MAP_BASE		0x10044220	# Endereço da unidade superior esquerda
 
+.eqv Y_JUMP	2048	# Valor necessario para deslocar uma unidade para baixo
+.eqv Y_SHIFT	11	# log_2 (Y_JUMP)
 
 
 
@@ -120,9 +122,24 @@ GetTileAddress:
 #	v0: Endereco da unidade
 GetUnitAddress:
 	sll $a0, $a0, 2		# x * 4 bytes = 2^2
-	sll $a1, $a1, 11	# y * 512 * 4 = y * 2^11
+	sll $a1, $a1, Y_SHIFT
 	
 	li $v0, MAP_BASE	# Endereco base do mapa
+	add $v0, $v0, $a0
+	add $v0, $v0, $a1
+	
+	jr $ra
+	
+
+# Funcao que retorna o endereco na memoria de uma posicao em unidades
+# 	a0: Posicao x em unidades
+#	a1: Posicao y em unidades
+#	v0: Endereco da unidade
+GetBitmapUnitAddress:
+	sll $a0, $a0, 2	
+	sll $a1, $a1, Y_SHIFT	
+	
+	li $v0, BITMAP_BASE	# Endereco base do bitmap
 	add $v0, $v0, $a0
 	add $v0, $v0, $a1
 	
@@ -173,6 +190,46 @@ BackgroundHasColor:
 	
 	jr $ra
 
+# Desenha um retangulo de uma determinada cor na interface
+# 	a0: Posicao x em unidades do bitmap
+#	a1: Posicao y em unidades do bitmap
+#	a2: Largura
+#	a3: Altura
+#	t0: cor (RRGGBB)
+DrawRectangle:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal GetBitmapUnitAddress	# os atributos ja estao nos registradores
+	
+	move $t1, $v0
+	move $t2, $zero
+	move $t3, $zero
+	
+	li $t4, Y_JUMP
+	sll $t5, $a2, 2
+	sub $t4, $t4, $t5	# salto para a linha seguinte
+	
+	DRecRow:
+	beq $t3, $a3, DRecRowExit
+		DRecCol:
+		beq $t2, $a2, DRecColExit
+			sw $t0, 0($t1)		# pinta
+			addi $t1, $t1, 4	# desloca para a proxima coluna
+		addi $t2, $t2, 1
+		j DRecCol
+		DRecColExit:
+	add $t1, $t1, $t4	# desloca para a proxima linha
+	move $t2, $zero
+	addi $t3, $t3 1
+	j DRecRow
+	DRecRowExit:
+	
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+
+	jr $ra
 
 # Funcao que inicializa elementos como
 # interface, mapa e jogador.
