@@ -65,13 +65,16 @@ Font:
     .byte 31,1,2,4,8,8,8,0           # 7
     .byte 14,17,17,14,17,17,14,0     # 8
     .byte 14,17,17,15,1,1,14,0       # 9
+    
+    # Outros
+    .byte 0,0,0,14,0,0,0,0		# -
 
 
 Text_TORRES:	.asciiz "TORRES"
-Text_SIMPLES:	.asciiz "SIMPLES"
-Text_GELO:	.asciiz "GELO"
-Text_RIFLE:	.asciiz "RIFLE"
-Text_CANHAO:	.asciiz "CANHAO"
+Text_SIMPLES:	.asciiz "1-SIMPLES"
+Text_GELO:	.asciiz "2-GELO"
+Text_RIFLE:	.asciiz "3-RIFLE"
+Text_CANHAO:	.asciiz "4-CANHAO"
 
 
 .text
@@ -300,6 +303,12 @@ DrawChar:
 	sw $ra, 0($sp)
 
 	# 1) Checando se o char é uma letra, um numero ou invalido
+	
+	bne $a2, 45, IsNotHyphen
+	li $t0, 36
+	j DCBranch
+	
+	IsNotHyphen:
 
 	li $t0, 65
 	slt $t0, $a2, $t0	# < 'A'
