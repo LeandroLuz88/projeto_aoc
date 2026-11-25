@@ -34,3 +34,4 @@ Exit:
 .include "tower.asm"
 .include "enemy.asm"
 .include "map.asm"
+.include "game.asm"

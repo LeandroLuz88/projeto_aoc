@@ -84,6 +84,8 @@ Text_GELO:	.asciiz "2-GELO"
 Text_RIFLE:	.asciiz "3-RIFLE"
 Text_CANHAO:	.asciiz "4-CANHAO"
 
+StringBuffer:	.space 11	# Buffer de string que suporta 10 caracteres + 1 terminador
+
 
 .text
 
@@ -433,15 +435,89 @@ DrawText:
 	addi $sp, $sp, 4
 	jr $ra
 
+
+# Converte um inteiro nao negativo em string ASCII terminada em '\0'
+#	a0: Numero (unsigned)
+#	a1: Endereco do buffer
+#	v0: Quantidade de caracteres (sem o terminador)
+IntToString:
+	li $t1, 10
+	move $t0, $a0
+	move $t2, $zero           # Quantidade de digitos
+	
+	# Conta o numero de digitos decimais
+	ITSCount:
+		addi $t2, $t2, 1
+		divu $t0, $t1
+		mflo $t0	# Quociente
+	bnez $t0, ITSCount      # Do-while: o 0 gera 1 digito
+	
+	add $t3, $a1, $t2       # Posicao do terminador
+	sb $zero, 0($t3)
+	move $v0, $t2
+	move $t0, $a0
+  
+	ITSFill:
+		addi $t3, $t3, -1
+		divu $t0, $t1
+		mflo $t0        # Quociente
+		mfhi $t4        # Resto = digito
+		addi $t4, $t4, 48
+		sb $t4, 0($t3)
+	bne $t3, $a1, ITSFill
+
+	jr $ra
+  
+
+
+# Atualiza o display de vida de acordo com a vida atual
+UpdateLifeDisplay:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	lw $a0, Life
+	la $a1, StringBuffer
+	jal IntToString
+	
+	li $a0, LIFE_DISPLAY_X
+	li $a1, LIFE_DISPLAY_Y
+	la $a2, StringBuffer
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
+
+# Atualiza o display de moedas de acordo com a quantidade de moedas atual
+UpdateCoinsDisplay:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	lw $a0, Coins
+	la $a1, StringBuffer
+	jal IntToString
+	
+	li $a0, COINS_DISPLAY_X
+	li $a1, COINS_DISPLAY_Y
+	la $a2, StringBuffer
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
 # Funcao que inicializa elementos como
 # interface, mapa e jogador.
 InitGame:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
-	
+
 	jal PaintBackground
 	jal DrawMap
-	
+
 	# Desenha o jogador na posicao inicial
 	la $t0, PlayerX
 	lw $a0, 0($t0)
@@ -595,6 +671,7 @@ InitGameLayout:
 	li $a2, 12
 	li $a3, 13
 	jal DrawSprite
+	jal UpdateLifeDisplay
 	
 	# Desenha moeda
 	li $a0, 388
@@ -605,6 +682,7 @@ InitGameLayout:
 	li $a2, 13
 	li $a3, 13
 	jal DrawSprite
+	jal UpdateCoinsDisplay
 	
 	# 4) Quadro de atributos da arma do jogador
 	
