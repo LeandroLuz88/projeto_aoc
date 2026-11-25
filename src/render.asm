@@ -67,6 +67,11 @@ Font:
     .byte 14,17,17,15,1,1,14,0       # 9
 
 
+Text_TORRES:	.asciiz "TORRES"
+Text_SIMPLES:	.asciiz "SIMPLES"
+Text_GELO:	.asciiz "GELO"
+Text_RIFLE:	.asciiz "RIFLE"
+Text_CANHAO:	.asciiz "CANHAO"
 
 
 .text
@@ -439,6 +444,8 @@ InitGameLayout:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
+	# Desenha os retangulos
+	
 	li $a0, 8
 	li $a1, 8
 	li $a2, 120
@@ -466,6 +473,104 @@ InitGameLayout:
 	li $a3, 112
 	li $t0, BOX_COLOR
 	jal DrawRectangle
+	
+	# Desenha os textos
+	
+	li $a0, 12
+	li $a1, 12
+	la $a2, Text_TORRES
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 28
+	la $a2, Text_SIMPLES
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 48
+	la $a2, Text_GELO
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 68
+	la $a2, Text_RIFLE
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 88
+	la $a2, Text_CANHAO
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	# Desenha as torres
+	
+	li $a0, 12
+	li $a1, 24
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 24
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerSimple
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
+	
+	li $a0, 12
+	li $a1, 44
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 44
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerIce
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
+	
+	li $a0, 12
+	li $a1, 64
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 64
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerRifle
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
+	
+	li $a0, 12
+	li $a1, 84
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 84
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerCannon
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
 	
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
