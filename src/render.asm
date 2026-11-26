@@ -475,6 +475,14 @@ UpdateLifeDisplay:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	
+	# Apaga o display
+	li $a0, LIFE_DISPLAY_X
+	li $a1, LIFE_DISPLAY_Y
+	li $a2, 24
+	li $a3, CHAR_HEIGHT
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
 	lw $a0, Life
 	la $a1, StringBuffer
 	jal IntToString
@@ -494,6 +502,14 @@ UpdateLifeDisplay:
 UpdateCoinsDisplay:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
+	
+	# Apaga o display
+	li $a0, COINS_DISPLAY_X
+	li $a1, COINS_DISPLAY_Y
+	li $a2, 24
+	li $a3, CHAR_HEIGHT
+	li $t0, BOX_COLOR
+	jal DrawRectangle
 	
 	lw $a0, Coins
 	la $a1, StringBuffer
