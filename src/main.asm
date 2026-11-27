@@ -6,6 +6,7 @@
 main:
 	jal InitGame
 	jal InitEnemies
+	jal InitGameLayout
 	
 	GameLoop:
 		jal ReadInput
@@ -33,3 +34,4 @@ Exit:
 .include "tower.asm"
 .include "enemy.asm"
 .include "map.asm"
+.include "game.asm"

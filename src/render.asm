@@ -5,21 +5,95 @@
 #	- Display Height:	512
 #	- Base address:		0x100040000 (heap)
 
-# Funções:
-#	- PaintBackground
-#	- DrawMap
+.eqv BITMAP_BASE	0x10040000	# Endereço base do bitmap
+.eqv BITMAP_END		0x100C0000	# Endereço final do bitmap: BITMAP_BASE + [4 * (1024/2) * (512/2)]
+.eqv MAP_BASE		0x10044220	# Endereço da unidade superior esquerda
+
+.eqv Y_JUMP	2048	# Valor necessario para deslocar uma unidade para baixo
+.eqv Y_SHIFT	11	# log_2 (Y_JUMP)
+
+.eqv BACKGROUND_COLOR	0x333344
+.eqv BOX_COLOR		0x57576c
+
+# Medidas da fonte de caracteres
+.eqv CHAR_WIDTH		5
+.eqv CHAR_HEIGHT	8
+
+# Posicao do display de vida
+.eqv LIFE_DISPLAY_X	405
+.eqv LIFE_DISPLAY_Y	14
+
+# Posicao do display de moedas
+.eqv COINS_DISPLAY_X	405
+.eqv COINS_DISPLAY_Y	30
+
 
 .data
 
-MapBase: .word 0x10044040	# Endereço base do mapa
+# Fonte de caracteres, de A a Z e 0 a 9.
+# Cada byte é uma linha e cada bit do byte 
+# representa um ponto a ser pintado
+Font:
+    # Letras maiusculas (A-Z)
+    .byte 14,17,17,31,17,17,17,17    # A
+    .byte 30,17,17,30,17,17,17,30     # B
+    .byte 14,17,16,16,16,16,17,14    # C
+    .byte 30,17,17,17,17,17,17,30     # D
+    .byte 31,16,16,30,16,16,16,31     # E
+    .byte 31,16,16,30,16,16,16,16     # F
+    .byte 14,17,16,23,17,17,17,15    # G
+    .byte 17,17,17,31,17,17,17,17   # H
+    .byte 31,4,4,4,4,4,4,31          # I
+    .byte 7,2,2,2,18,18,18,12         # J
+    .byte 17,18,20,24,20,18,17,17   # K
+    .byte 16,16,16,16,16,16,16,31     # L
+    .byte 17,27,21,21,17,17,17,17   # M
+    .byte 17,25,21,19,17,17,17,17   # N
+    .byte 14,17,17,17,17,17,17,14     # O
+    .byte 30,17,17,30,16,16,16,16   # P
+    .byte 14,17,17,17,21,18,13,1     # Q
+    .byte 30,17,17,30,20,18,17,17   # R
+    .byte 15,16,16,14,1,1,1,30      # S
+    .byte 31,4,4,4,4,4,4,4           # T
+    .byte 17,17,17,17,17,17,17,14     # U
+    .byte 17,17,17,17,17,10,4,4      # V
+    .byte 17,17,17,21,21,21,10,10   # W
+    .byte 17,17,10,4,10,17,17,17    # X
+    .byte 17,17,10,4,4,4,4,4         # Y
+    .byte 31,1,2,4,8,16,16,31         # Z
+
+    # Numeros (0-9)
+    .byte 14,17,19,21,25,17,14,0     # 0
+    .byte 4,12,4,4,4,4,14,0          # 1
+    .byte 14,17,1,2,4,8,31,0         # 2
+    .byte 30,1,1,14,1,1,30,0         # 3
+    .byte 2,6,10,18,31,2,2,0         # 4
+    .byte 31,16,16,30,1,1,30,0       # 5
+    .byte 14,16,16,30,17,17,14,0     # 6
+    .byte 31,1,2,4,8,8,8,0           # 7
+    .byte 14,17,17,14,17,17,14,0     # 8
+    .byte 14,17,17,15,1,1,14,0       # 9
+    
+    # Outros
+    .byte 0,0,0,14,0,0,0,0		# -
+
+
+Text_TORRES:	.asciiz "TORRES"
+Text_SIMPLES:	.asciiz "1-SIMPLES"
+Text_GELO:	.asciiz "2-GELO"
+Text_RIFLE:	.asciiz "3-RIFLE"
+Text_CANHAO:	.asciiz "4-CANHAO"
+
+StringBuffer:	.space 11	# Buffer de string que suporta 10 caracteres + 1 terminador
+
 
 .text
 
 # Pinta todo o bitmap de uma cor
 PaintBackground:
-	li $t0, 0x10040000	# Endereço base do bitmap
-	addi $t1, $t0, 524288	# Endereço final
-	li $t2, 0x333344	# Cor
+	li $t0, BITMAP_BASE
+	li $t1, BITMAP_END
+	li $t2, BACKGROUND_COLOR	# Cor
 	
 	PaintBackgroundLoop:
 		beq $t0, $t1, EndPaintBackgroundLoop
@@ -35,7 +109,7 @@ DrawMap:
 	li $t0, 0		# índice i
 	li $t1, 0		# indice j
 	li $t2, 15 		# 15x15 tiles
-	li $t3, 0x10044040	# Endereço base do mapa (Endereço base + 251936960)
+	li $t3, MAP_BASE	# Endereço base do mapa (Endereço base + 251936960)
 	la $t4, Map		# Matriz de mapa
 	
 	# Argumentos da função DrawSprite constantes
@@ -106,7 +180,7 @@ GetTileAddress:
 	sll $a0, $a0, 6		# x * 16 * 4 = 2^6
 	sll $a1, $a1, 14	# y * 512 * 8 * 4 = y * 2^14
 	
-	li $v0, 0x10044040	# Endereco base do mapa
+	li $v0, MAP_BASE	# Endereco base do mapa
 	add $v0, $v0, $a0
 	add $v0, $v0, $a1
 	
@@ -119,9 +193,24 @@ GetTileAddress:
 #	v0: Endereco da unidade
 GetUnitAddress:
 	sll $a0, $a0, 2		# x * 4 bytes = 2^2
-	sll $a1, $a1, 11	# y * 512 * 4 = y * 2^11
+	sll $a1, $a1, Y_SHIFT
 	
-	li $v0, 0x10044040	# Endereco base do mapa
+	li $v0, MAP_BASE	# Endereco base do mapa
+	add $v0, $v0, $a0
+	add $v0, $v0, $a1
+	
+	jr $ra
+	
+
+# Funcao que retorna o endereco na memoria de uma posicao em unidades
+# 	a0: Posicao x em unidades
+#	a1: Posicao y em unidades
+#	v0: Endereco da unidade
+GetBitmapUnitAddress:
+	sll $a0, $a0, 2	
+	sll $a1, $a1, Y_SHIFT	
+	
+	li $v0, BITMAP_BASE	# Endereco base do bitmap
 	add $v0, $v0, $a0
 	add $v0, $v0, $a1
 	
@@ -172,16 +261,279 @@ BackgroundHasColor:
 	
 	jr $ra
 
+# Desenha um retangulo de uma determinada cor na interface
+# 	a0: Posicao x em unidades do bitmap
+#	a1: Posicao y em unidades do bitmap
+#	a2: Largura
+#	a3: Altura
+#	t0: cor (0xRRGGBB)
+DrawRectangle:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	jal GetBitmapUnitAddress	# os atributos ja estao nos registradores
+	
+	move $t1, $v0
+	move $t2, $zero
+	move $t3, $zero
+	
+	li $t4, Y_JUMP
+	sll $t5, $a2, 2
+	sub $t4, $t4, $t5	# salto para a linha seguinte
+	
+	DRecRow:
+	beq $t3, $a3, DRecRowExit
+		DRecCol:
+		beq $t2, $a2, DRecColExit
+			sw $t0, 0($t1)		# pinta
+			addi $t1, $t1, 4	# desloca para a proxima coluna
+		addi $t2, $t2, 1
+		j DRecCol
+		DRecColExit:
+	add $t1, $t1, $t4	# desloca para a proxima linha
+	move $t2, $zero
+	addi $t3, $t3 1
+	j DRecRow
+	DRecRowExit:
+	
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+
+	jr $ra
+	
+
+# Desenha um caractere no bitmap
+#	a0: Posicao x em unidades do bitmap
+#	a1: Posicao y em unidades do bitmap
+#	a2: Codigo ascii. Apenas letras MAIUSCULAS ou numeros
+#	a3: Cor (0xRRGGBB)
+DrawChar:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+
+	# 1) Checando se o char é uma letra, um numero ou invalido
+	
+	bne $a2, 45, IsNotHyphen
+	li $t0, 36
+	j DCBranch
+	
+	IsNotHyphen:
+
+	li $t0, 65
+	slt $t0, $a2, $t0	# < 'A'
+	bnez $t0, CharIsNumber
+	
+	li $t0, 90
+	slt $t0, $t0, $a2	# > 'Z'
+	bnez $t0, DCExit
+	
+	# Indice do array Font como letra
+	addi $t0, $a2, -65
+	
+	j DCBranch
+	
+	CharIsNumber:
+	li $t0, 48
+	slt $t0, $a2, $t0	# < '0'
+	bnez $t0, DCExit
+	
+	li $t0, 57
+	slt $t0, $t0, $a2	# > '9'
+	bnez $t0, DCExit
+	
+	# Indice do array Font como numero
+	addi $t0, $a2, -22	# -48 + 26
+	
+	
+	# 2) Desenha o char no bitmap se for valido
+	
+	DCBranch:
+
+	# Ajusta o array Font para o indice
+	sll $t0, $t0, 3		# CHAR_HEIGHT = 8 = 2^3
+	la $t1, Font
+	add $t0, $t1, $t0	# Posicao que armazena os bytes do caractere
+	
+	jal GetBitmapUnitAddress	# Os atributos ja estao nos registradores
+	move $t1, $v0		# Posicao no bitmap
+	
+	move $t2, $zero
+	DCRow:
+	beq $t2, CHAR_HEIGHT, DCRowEnd
+		li $t4, 16	# 2^(CHAR_WIDTH) = 2^5
+		lbu $t5, 0($t0)	# Byte da linha
+		move $t3, $zero
+		DCCol:
+		beq $t3, CHAR_WIDTH, DCColEnd
+			#Verifica se determinado bit do byte da linha eh 1 (pinta) ou 0 (nao pinta)
+			and $t6, $t4, $t5
+			beqz $t6, DCColBranch
+			
+			sw $a3, 0($t1)	# Pinta
+			
+			DCColBranch:
+			
+			srl $t4, $t4, 1		# Proximo bit
+			addi $t1, $t1, 4	# Proxima posicao
+		addi $t3, $t3, 1	# Proxima coluna
+		j DCCol
+		DCColEnd:
+		addi $t0, $t0, 1
+		addi $t1, $t1, 2028		# 4 * (512 - CHAR_WIDTH) = 4 * (512 - 5)
+	addi $t2, $t2, 1	# Proxima linha
+	j DCRow
+	DCRowEnd:
+	
+	DCExit:
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
+
+# Desenha um texto no bitmap de acordo com uma string
+#	a0: Posicao x em unidades do bitmap
+#	a1: Posicao y em unidades do bitmap
+#	a2: Endereco da string
+#	a3: Cor (0xRRGGBB)
+DrawText:
+	addi $sp, $sp -4
+	sw $ra, 0($sp)
+	
+	move $t0, $a0
+	move $t1, $a1
+	move $t2, $a2
+	
+	DTLoop:
+		lbu $a2, 0($t2)
+		beqz $a2, DTLoopEnd	# = '\0'
+		beq $a2, 32, DTJump	# Caractere de espaco
+		
+		move $a0, $t0
+		move $a1, $t1
+		
+		addi $sp, $sp, -12
+		sw $t0, 0($sp)
+		sw $t1, 4($sp)
+		sw $t2, 8($sp)
+		
+		jal DrawChar
+		
+		lw $t0, 0($sp)
+		lw $t1, 4($sp)
+		lw $t2, 8($sp)
+		addi $sp, $sp, 12
+		
+		DTJump:
+		
+		addi $t0, $t0, 6	# CHAT_WIDTH + 1
+		addi $t2, $t2, 1	
+	j DTLoop
+	DTLoopEnd:
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
+
+# Converte um inteiro nao negativo em string ASCII terminada em '\0'
+#	a0: Numero (unsigned)
+#	a1: Endereco do buffer
+#	v0: Quantidade de caracteres (sem o terminador)
+IntToString:
+	li $t1, 10
+	move $t0, $a0
+	move $t2, $zero           # Quantidade de digitos
+	
+	# Conta o numero de digitos decimais
+	ITSCount:
+		addi $t2, $t2, 1
+		divu $t0, $t1
+		mflo $t0	# Quociente
+	bnez $t0, ITSCount      # Do-while: o 0 gera 1 digito
+	
+	add $t3, $a1, $t2       # Posicao do terminador
+	sb $zero, 0($t3)
+	move $v0, $t2
+	move $t0, $a0
+  
+	ITSFill:
+		addi $t3, $t3, -1
+		divu $t0, $t1
+		mflo $t0        # Quociente
+		mfhi $t4        # Resto = digito
+		addi $t4, $t4, 48
+		sb $t4, 0($t3)
+	bne $t3, $a1, ITSFill
+
+	jr $ra
+  
+
+
+# Atualiza o display de vida de acordo com a vida atual
+UpdateLifeDisplay:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	# Apaga o display
+	li $a0, LIFE_DISPLAY_X
+	li $a1, LIFE_DISPLAY_Y
+	li $a2, 24
+	li $a3, CHAR_HEIGHT
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	lw $a0, Life
+	la $a1, StringBuffer
+	jal IntToString
+	
+	li $a0, LIFE_DISPLAY_X
+	li $a1, LIFE_DISPLAY_Y
+	la $a2, StringBuffer
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
+
+# Atualiza o display de moedas de acordo com a quantidade de moedas atual
+UpdateCoinsDisplay:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	# Apaga o display
+	li $a0, COINS_DISPLAY_X
+	li $a1, COINS_DISPLAY_Y
+	li $a2, 24
+	li $a3, CHAR_HEIGHT
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	lw $a0, Coins
+	la $a1, StringBuffer
+	jal IntToString
+	
+	li $a0, COINS_DISPLAY_X
+	li $a1, COINS_DISPLAY_Y
+	la $a2, StringBuffer
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
 
 # Funcao que inicializa elementos como
 # interface, mapa e jogador.
 InitGame:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
-	
+
 	jal PaintBackground
 	jal DrawMap
-	
+
 	# Desenha o jogador na posicao inicial
 	la $t0, PlayerX
 	lw $a0, 0($t0)
@@ -195,3 +547,173 @@ InitGame:
 	
 	jr $ra
 
+
+# Inicializa elementos visuais do layout de jogo
+InitGameLayout:
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	
+	# 1) Quadro das torres
+	
+	li $a0, 8
+	li $a1, 8
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	# 1.1) Desenha os textos
+	
+	li $a0, 12
+	li $a1, 12
+	la $a2, Text_TORRES
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 28
+	la $a2, Text_SIMPLES
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 48
+	la $a2, Text_GELO
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 68
+	la $a2, Text_RIFLE
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	li $a0, 32
+	li $a1, 88
+	la $a2, Text_CANHAO
+	li $a3, 0xFFFFFF
+	jal DrawText
+	
+	# 1.2) Desenha torres
+	
+	li $a0, 12
+	li $a1, 24
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 24
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerSimple
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
+	
+	li $a0, 12
+	li $a1, 44
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 44
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerIce
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
+	
+	li $a0, 12
+	li $a1, 64
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 64
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerRifle
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
+	
+	li $a0, 12
+	li $a1, 84
+	li $a2, 16
+	li $a3, 16
+	li $t0, 0xAAAAAA
+	jal DrawRectangle
+	
+	li $a0, 12
+	li $a1, 84
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, TowerCannon
+	li $a2, 16
+	li $a3, 16
+	jal DrawSprite
+	
+	# 2) Quadro da torre selecionada
+	
+	li $a0, 8
+	li $a1, 136
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	# 3) Quadro das informacoes da partida
+	
+	li $a0, 384
+	li $a1, 8
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	# Desenha coracao
+	li $a0, 388
+	li $a1, 12
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, Heart
+	li $a2, 12
+	li $a3, 13
+	jal DrawSprite
+	jal UpdateLifeDisplay
+	
+	# Desenha moeda
+	li $a0, 388
+	li $a1, 28
+	jal GetBitmapUnitAddress
+	move $a1, $v0
+	la $a0, Coin
+	li $a2, 13
+	li $a3, 13
+	jal DrawSprite
+	jal UpdateCoinsDisplay
+	
+	# 4) Quadro de atributos da arma do jogador
+	
+	li $a0, 384
+	li $a1, 136
+	li $a2, 120
+	li $a3, 112
+	li $t0, BOX_COLOR
+	jal DrawRectangle
+	
+	
+	
+	
+	
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+	jr $ra
